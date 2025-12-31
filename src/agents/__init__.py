@@ -1,5 +1,6 @@
 """Agent modules for the trading system."""
 
+from .coordinator import CoordinatorAgent, TradeDecision
 from .execution_agent import ExecutionAgent, ExecutionDecision, ExecutionResult
 from .market_data import MarketDataAgent
 from .risk_manager import PortfolioRisk, RiskDecision, RiskManagerAgent
@@ -12,6 +13,7 @@ from .strategy_selector import (
 )
 
 __all__ = [
+    "CoordinatorAgent",
     "ExecutionAgent",
     "ExecutionDecision",
     "ExecutionResult",
@@ -25,4 +27,5 @@ __all__ = [
     "StrategySelectionContext",
     "StrategySelectionDecision",
     "StrategySelectorAgent",
+    "TradeDecision",
 ]

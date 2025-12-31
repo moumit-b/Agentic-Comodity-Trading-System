@@ -13,6 +13,14 @@ from src.strategies import Signal, SignalDirection
 
 logger = logging.getLogger(__name__)
 
+# Import AlpacaService only if available
+try:
+    from src.services.alpaca_api import AlpacaService
+    ALPACA_AVAILABLE = True
+except ImportError:
+    ALPACA_AVAILABLE = False
+    logger.warning("Alpaca API not available - live trading disabled")
+
 
 class ExecutionDecision(str, Enum):
     """Execution decision types."""
@@ -43,16 +51,23 @@ class ExecutionAgent:
     - Confirmation workflows
     """
 
-    def __init__(self, config: TradingConfig, mode: AutomationMode = AutomationMode.ADVISORY):
+    def __init__(
+        self,
+        config: TradingConfig,
+        mode: AutomationMode = AutomationMode.ADVISORY,
+        alpaca_service: "AlpacaService | None" = None,
+    ):
         """
         Initialize Execution Agent.
 
         Args:
             config: Trading configuration
             mode: Automation mode (default: ADVISORY)
+            alpaca_service: Optional Alpaca service for live/paper trading
         """
         self.config = config
         self.mode = mode
+        self.alpaca_service = alpaca_service
 
     async def execute_signal(
         self,
@@ -118,15 +133,34 @@ class ExecutionAgent:
         self, signal: Signal, position_size: Decimal
     ) -> ExecutionResult:
         """Handle PAPER_AUTO mode - execute in paper account automatically."""
-        # Create paper execution
+        alpaca_order_id = None
+
+        # If Alpaca service available, submit real paper order
+        if self.alpaca_service:
+            try:
+                side = "BUY" if signal.direction == SignalDirection.LONG else "SELL"
+                alpaca_order = await self.alpaca_service.submit_limit_order(
+                    symbol=signal.symbol,
+                    qty=position_size,
+                    side=side,
+                    limit_price=signal.suggested_entry,
+                    time_in_force="day",
+                )
+                alpaca_order_id = alpaca_order.id
+                logger.info(f"Submitted paper order to Alpaca: {alpaca_order_id}")
+            except Exception as e:
+                logger.error(f"Failed to submit to Alpaca (falling back to simulation): {e}")
+
+        # Create paper execution record
         execution = Execution(
             symbol=signal.symbol,
             side=signal.direction.value,
             qty=position_size,
-            filled_price=signal.suggested_entry,
+            filled_price=signal.suggested_entry if not alpaca_order_id else None,
             order_type="LIMIT",
-            status="FILLED",
+            status="FILLED" if not alpaca_order_id else "PENDING",
             requires_confirmation=False,
+            alpaca_order_id=alpaca_order_id,
         )
 
         async with get_session() as session:
@@ -138,6 +172,9 @@ class ExecutionAgent:
             f"[PAPER] Executed {signal.direction.value} {position_size} shares of {signal.symbol} "
             f"@ ${signal.suggested_entry:.2f}"
         )
+        if alpaca_order_id:
+            message += f" (Alpaca: {alpaca_order_id})"
+
         logger.info(message)
 
         return ExecutionResult(
@@ -148,6 +185,7 @@ class ExecutionAgent:
             metadata={
                 "execution_id": exec_id,
                 "is_paper": True,
+                "alpaca_order_id": alpaca_order_id,
             },
         )
 
@@ -193,15 +231,47 @@ class ExecutionAgent:
         self, signal: Signal, position_size: Decimal
     ) -> ExecutionResult:
         """Handle LIVE_AUTO mode - execute in live account automatically."""
-        # Create live execution
+        alpaca_order_id = None
+
+        # Submit to Alpaca if available
+        if self.alpaca_service:
+            try:
+                side = "BUY" if signal.direction == SignalDirection.LONG else "SELL"
+                alpaca_order = await self.alpaca_service.submit_limit_order(
+                    symbol=signal.symbol,
+                    qty=position_size,
+                    side=side,
+                    limit_price=signal.suggested_entry,
+                    time_in_force="day",
+                )
+                alpaca_order_id = alpaca_order.id
+                logger.warning(f"Submitted LIVE order to Alpaca: {alpaca_order_id}")
+            except Exception as e:
+                logger.error(f"Failed to submit LIVE order to Alpaca: {e}")
+                # Don't create execution record if Alpaca submission failed
+                return ExecutionResult(
+                    decision=ExecutionDecision.REJECTED,
+                    order_id=None,
+                    message=f"Failed to submit live order: {str(e)}",
+                    requires_confirmation=False,
+                    metadata={"error": str(e)},
+                )
+        else:
+            # In testing/development mode without Alpaca, simulate execution
+            logger.warning(
+                "LIVE_AUTO mode without Alpaca service - simulating execution (DEVELOPMENT ONLY)"
+            )
+
+        # Create live execution record
         execution = Execution(
             symbol=signal.symbol,
             side=signal.direction.value,
             qty=position_size,
-            filled_price=None,  # Will be filled after order execution
+            filled_price=None if alpaca_order_id else signal.suggested_entry,
             order_type="LIMIT",
-            status="PENDING",  # Will update to FILLED after Alpaca confirms
+            status="PENDING" if alpaca_order_id else "FILLED",
             requires_confirmation=False,
+            alpaca_order_id=alpaca_order_id,
         )
 
         async with get_session() as session:
@@ -209,10 +279,17 @@ class ExecutionAgent:
             await session.flush()
             exec_id = execution.id
 
-        message = (
-            f"[LIVE-AUTO] Submitted {signal.direction.value} {position_size} shares "
-            f"of {signal.symbol} @ ${signal.suggested_entry:.2f}"
-        )
+        if alpaca_order_id:
+            message = (
+                f"[LIVE-AUTO] Submitted {signal.direction.value} {position_size} shares "
+                f"of {signal.symbol} @ ${signal.suggested_entry:.2f} (Alpaca: {alpaca_order_id})"
+            )
+        else:
+            message = (
+                f"[LIVE-AUTO-SIMULATED] Simulated {signal.direction.value} {position_size} shares "
+                f"of {signal.symbol} @ ${signal.suggested_entry:.2f} (NO REAL EXECUTION)"
+            )
+
         logger.warning(message)  # Use warning level for live trades
 
         return ExecutionResult(
@@ -222,7 +299,9 @@ class ExecutionAgent:
             requires_confirmation=False,
             metadata={
                 "execution_id": exec_id,
-                "is_live": True,
+                "is_live": alpaca_order_id is not None,
+                "is_simulated": alpaca_order_id is None,
+                "alpaca_order_id": alpaca_order_id,
             },
         )
 

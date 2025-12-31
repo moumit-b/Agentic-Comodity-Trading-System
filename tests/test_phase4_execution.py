@@ -86,7 +86,7 @@ class TestExecutionAgent:
 
     @pytest.mark.asyncio
     async def test_live_auto_mode(self, config, signal):
-        """Test LIVE_AUTO mode - automatic live execution."""
+        """Test LIVE_AUTO mode - simulated (no Alpaca service in test)."""
         agent = ExecutionAgent(config, mode=AutomationMode.LIVE_AUTO)
 
         result = await agent.execute_signal(
@@ -99,7 +99,9 @@ class TestExecutionAgent:
         assert result.order_id is not None
         assert result.requires_confirmation is False
         assert "LIVE-AUTO" in result.message
-        assert result.metadata["is_live"] is True
+        # Without Alpaca service, execution is simulated
+        assert result.metadata["is_simulated"] is True
+        assert result.metadata["is_live"] is False
 
     @pytest.mark.asyncio
     async def test_get_pending_confirmations(self, config, signal):

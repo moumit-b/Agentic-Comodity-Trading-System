@@ -34,9 +34,7 @@ class RedisCache:
             return
 
         try:
-            password = (
-                self.config.password.get_secret_value() if self.config.password else None
-            )
+            password = self.config.password.get_secret_value() if self.config.password else None
 
             self._client = Redis(
                 host=self.config.host,
@@ -51,9 +49,7 @@ class RedisCache:
 
             # Test connection
             self._client.ping()
-            logger.info(
-                f"Redis connected: {self.config.host}:{self.config.port}/{self.config.db}"
-            )
+            logger.info(f"Redis connected: {self.config.host}:{self.config.port}/{self.config.db}")
 
         except (RedisConnectionError, RedisTimeoutError) as e:
             logger.error(f"Failed to connect to Redis: {e}")
@@ -128,9 +124,7 @@ class RedisCache:
             logger.error(f"Failed to retrieve 1m bars for {symbol}: {e}")
             return None
 
-    def cache_bars_aggregated(
-        self, symbol: str, timeframe: str, df: pd.DataFrame
-    ) -> None:
+    def cache_bars_aggregated(self, symbol: str, timeframe: str, df: pd.DataFrame) -> None:
         """
         Cache aggregated bars (5m, 15m, 1h, 1d) with TTL.
 

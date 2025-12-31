@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Git guard hook - prevents accidental git commits/pushes."""
+
 import json
 import sys
 

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Stop hook - runs quality gates when Claude stops (if files were modified)."""
+
 import subprocess
 import sys
 from pathlib import Path

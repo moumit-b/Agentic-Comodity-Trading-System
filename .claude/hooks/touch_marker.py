@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Touch marker hook - marks that files have been modified."""
+
 import sys
 from datetime import datetime
 from pathlib import Path

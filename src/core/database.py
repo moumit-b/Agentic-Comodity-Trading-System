@@ -164,9 +164,7 @@ def get_engine() -> AsyncEngine:
         ...     await conn.execute(text("SELECT 1"))
     """
     if _engine is None:
-        raise RuntimeError(
-            "Database not initialized. Call init_db() at application startup."
-        )
+        raise RuntimeError("Database not initialized. Call init_db() at application startup.")
     return _engine
 
 
@@ -186,9 +184,7 @@ def get_session_factory() -> async_sessionmaker[AsyncSession]:
         ...     result = await session.execute(select(Position))
     """
     if _session_factory is None:
-        raise RuntimeError(
-            "Database not initialized. Call init_db() at application startup."
-        )
+        raise RuntimeError("Database not initialized. Call init_db() at application startup.")
     return _session_factory
 
 

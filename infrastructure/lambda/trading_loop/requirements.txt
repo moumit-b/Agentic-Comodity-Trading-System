@@ -1,0 +1,13 @@
+# Lambda trading loop dependencies
+# These will be packaged into a Lambda layer
+
+# Core dependencies
+boto3>=1.34.0  # AWS SDK
+sqlalchemy[asyncio]>=2.0.23  # Database ORM
+asyncpg>=0.29.0  # PostgreSQL async driver
+redis>=5.0.1  # Redis client
+alpaca-py>=0.23.0  # Alpaca trading SDK
+pandas>=2.1.4  # Data analysis
+pandas-ta>=0.3.14b  # Technical analysis
+pydantic>=2.5.3  # Settings validation
+pydantic-settings>=2.1.0

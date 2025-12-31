@@ -239,8 +239,7 @@ class CoordinatorAgent:
             # Notify about rejection
             if self.notifier:
                 failed_checks = [
-                    check for check, passed in risk_decision.passed_checks.items()
-                    if not passed
+                    check for check, passed in risk_decision.passed_checks.items() if not passed
                 ]
                 await self.notifier.notify_risk_rejection(
                     symbol=signal.symbol,
@@ -315,12 +314,15 @@ class CoordinatorAgent:
 
         # === Return Decision ===
         return TradeDecision(
-            approved=execution_result.decision in [
+            approved=execution_result.decision
+            in [
                 ExecutionDecision.EXECUTE,
                 ExecutionDecision.REQUEST_CONFIRMATION,
             ],
             signal=signal,
-            rejection_reason="" if execution_result.decision == ExecutionDecision.EXECUTE else execution_result.message,
+            rejection_reason=""
+            if execution_result.decision == ExecutionDecision.EXECUTE
+            else execution_result.message,
             execution_result={
                 "decision": execution_result.decision.value,
                 "order_id": execution_result.order_id,

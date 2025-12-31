@@ -25,10 +25,7 @@ class AccountSnapshot(Base):
     portfolio_value: Mapped[Decimal] = mapped_column(Numeric(15, 2), nullable=False)
 
     def __repr__(self) -> str:
-        return (
-            f"<AccountSnapshot(timestamp={self.timestamp}, "
-            f"equity={self.total_equity})>"
-        )
+        return f"<AccountSnapshot(timestamp={self.timestamp}, equity={self.total_equity})>"
 
 
 class DailyLimit(Base):

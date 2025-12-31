@@ -139,9 +139,7 @@ class BollingerBandsMeanReversion(BaseStrategy):
             volume_confirmation = recent_volume > avg_volume * 1.2
 
         # Calculate signal strength
-        signal_strength = self.calculate_signal_strength(
-            signal_strength_base, confirmations
-        )
+        signal_strength = self.calculate_signal_strength(signal_strength_base, confirmations)
 
         # Calculate confidence
         regime_compatible = self.is_regime_compatible(market_regime)
@@ -285,9 +283,7 @@ class RSIOversoldOverbought(BaseStrategy):
             volume_confirmation = recent_volume > avg_volume
 
         # Calculate signal strength
-        signal_strength = self.calculate_signal_strength(
-            signal_strength_base, confirmations
-        )
+        signal_strength = self.calculate_signal_strength(signal_strength_base, confirmations)
 
         # Calculate confidence
         regime_compatible = self.is_regime_compatible(market_regime)
@@ -301,9 +297,7 @@ class RSIOversoldOverbought(BaseStrategy):
 
         # Calculate levels
         suggested_entry = current_price
-        suggested_stop = self.calculate_stop_loss(
-            suggested_entry, direction, atr, Decimal("2.0")
-        )
+        suggested_stop = self.calculate_stop_loss(suggested_entry, direction, atr, Decimal("2.0"))
         suggested_target = self.calculate_take_profit(
             suggested_entry, suggested_stop, direction, Decimal("1.5")
         )

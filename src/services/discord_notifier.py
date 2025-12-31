@@ -158,9 +158,7 @@ class DiscordNotifier:
                 "Total": f"${qty * price:.2f}",
                 "Order ID": order_id,
             },
-            color=self.colors[
-                AlertLevel.WARNING if not is_paper else AlertLevel.INFO
-            ],
+            color=self.colors[AlertLevel.WARNING if not is_paper else AlertLevel.INFO],
         )
         return await self.send_alert(alert)
 

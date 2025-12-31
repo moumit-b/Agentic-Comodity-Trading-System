@@ -21,9 +21,7 @@ class Decision(Base):
     timestamp: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default="NOW()"
     )
-    decision: Mapped[str] = mapped_column(
-        String(20), nullable=False
-    )  # APPROVE, REJECT, HOLD
+    decision: Mapped[str] = mapped_column(String(20), nullable=False)  # APPROVE, REJECT, HOLD
     reason: Mapped[str | None] = mapped_column(Text)
 
     # Risk parameters calculated
@@ -65,21 +63,15 @@ class Execution(Base):
     side: Mapped[str] = mapped_column(String(10), nullable=False)  # LONG, SHORT
     qty: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
     filled_price: Mapped[Decimal | None] = mapped_column(Numeric(10, 4))
-    order_type: Mapped[str] = mapped_column(
-        String(20), nullable=False
-    )  # MARKET, LIMIT, BRACKET
-    status: Mapped[str] = mapped_column(
-        String(20), nullable=False
-    )  # PENDING, FILLED, REJECTED
+    order_type: Mapped[str] = mapped_column(String(20), nullable=False)  # MARKET, LIMIT, BRACKET
+    status: Mapped[str] = mapped_column(String(20), nullable=False)  # PENDING, FILLED, REJECTED
     alpaca_order_id: Mapped[str | None] = mapped_column(String(50))
 
     # Confirmation tracking
     requires_confirmation: Mapped[bool] = mapped_column(default=False, nullable=False)
     confirmation_sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     confirmed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    confirmed_by: Mapped[str | None] = mapped_column(
-        String(20), comment="DISCORD, DASHBOARD, AUTO"
-    )
+    confirmed_by: Mapped[str | None] = mapped_column(String(20), comment="DISCORD, DASHBOARD, AUTO")
 
     # Error tracking
     error_message: Mapped[str | None] = mapped_column(Text)

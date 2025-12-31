@@ -1,16 +1,18 @@
 {
-  "contextFileName": "GEMINI.md",
-  "fileFiltering": {
-    "respectGitIgnore": true,
-    "enableRecursiveFileSearch": true
+  "general": {
+    "checkpointing": {
+      "enabled": true
+    },
+    "previewFeatures": true
   },
-  "checkpointing": {
-    "enabled": true
+  "context": {
+    "fileName": "GEMINI.md",
+    "fileFiltering": {
+      "respectGitIgnore": true,
+      "enableRecursiveFileSearch": true
+    }
   },
   "telemetry": {
     "enabled": false
-  },
-  "general": {
-    "previewFeatures": true
   }
 }

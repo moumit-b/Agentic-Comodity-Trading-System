@@ -74,6 +74,7 @@ def test_src_package_importable():
     """Verify src package can be imported."""
     try:
         import src
+
         assert hasattr(src, "__version__")
         assert src.__version__ == "0.1.0"
     except ImportError as e:

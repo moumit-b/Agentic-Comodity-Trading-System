@@ -44,9 +44,7 @@ class TradingConfig(BaseSettings):
 
     # === Risk Management ===
     risk_per_trade_pct: Decimal = Field(default=Decimal("0.01"), description="1% default")
-    max_risk_per_trade_pct: Decimal = Field(
-        default=Decimal("0.02"), description="2% hard limit"
-    )
+    max_risk_per_trade_pct: Decimal = Field(default=Decimal("0.02"), description="2% hard limit")
     max_portfolio_heat_pct: Decimal = Field(
         default=Decimal("0.05"), description="5% total risk cap"
     )
@@ -182,9 +180,7 @@ class AlpacaConfig(BaseSettings):
         case_sensitive=False,
     )
 
-    api_key: SecretStr = Field(
-        default=SecretStr(""), description="Alpaca API key (paper or live)"
-    )
+    api_key: SecretStr = Field(default=SecretStr(""), description="Alpaca API key (paper or live)")
     api_secret: SecretStr = Field(default=SecretStr(""), description="Alpaca API secret")
     base_url: str = Field(
         default="https://paper-api.alpaca.markets",
@@ -260,9 +256,7 @@ class AWSConfig(BaseSettings):
 
     region: str = Field(default="us-east-1")
     access_key_id: SecretStr = Field(default=SecretStr(""), description="AWS access key")
-    secret_access_key: SecretStr = Field(
-        default=SecretStr(""), description="AWS secret key"
-    )
+    secret_access_key: SecretStr = Field(default=SecretStr(""), description="AWS secret key")
 
     # RDS settings (overrides DatabaseConfig when deployed)
     rds_endpoint: str | None = Field(default=None, description="RDS instance endpoint")

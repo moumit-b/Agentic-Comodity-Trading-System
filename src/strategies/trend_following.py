@@ -124,9 +124,7 @@ class EMACrossoverStrategy(BaseStrategy):
             volume_confirmation = recent_volume > avg_volume * 1.1
 
         # Calculate final signal strength
-        signal_strength = self.calculate_signal_strength(
-            signal_strength_base, confirmations
-        )
+        signal_strength = self.calculate_signal_strength(signal_strength_base, confirmations)
 
         # Calculate confidence
         regime_compatible = self.is_regime_compatible(market_regime)
@@ -141,9 +139,7 @@ class EMACrossoverStrategy(BaseStrategy):
 
         # Calculate entry, stop, and target
         suggested_entry = current_price
-        suggested_stop = self.calculate_stop_loss(
-            suggested_entry, direction, atr, Decimal("2.0")
-        )
+        suggested_stop = self.calculate_stop_loss(suggested_entry, direction, atr, Decimal("2.0"))
         suggested_target = self.calculate_take_profit(
             suggested_entry, suggested_stop, direction, Decimal("2.5")
         )
@@ -252,20 +248,14 @@ class MACDTrendStrategy(BaseStrategy):
             direction = SignalDirection.LONG
             # Strength based on MACD histogram and distance from EMA
             hist_strength = min(abs(macd_hist) * 10, 50)
-            ema_strength = min(
-                ((float(current_price) - ema_20) / ema_20) * 100, 30
-            )
+            ema_strength = min(((float(current_price) - ema_20) / ema_20) * 100, 30)
             signal_strength_base = hist_strength + ema_strength
 
         # SHORT: MACD < signal + histogram < 0 + price < EMA
-        elif (
-            macd < macd_signal and macd_hist < 0 and current_price < Decimal(str(ema_20))
-        ):
+        elif macd < macd_signal and macd_hist < 0 and current_price < Decimal(str(ema_20)):
             direction = SignalDirection.SHORT
             hist_strength = min(abs(macd_hist) * 10, 50)
-            ema_strength = min(
-                ((ema_20 - float(current_price)) / ema_20) * 100, 30
-            )
+            ema_strength = min(((ema_20 - float(current_price)) / ema_20) * 100, 30)
             signal_strength_base = hist_strength + ema_strength
 
         if direction is None:
@@ -298,9 +288,7 @@ class MACDTrendStrategy(BaseStrategy):
             volume_confirmation = recent_volume > avg_volume
 
         # Calculate signal strength
-        signal_strength = self.calculate_signal_strength(
-            signal_strength_base, confirmations
-        )
+        signal_strength = self.calculate_signal_strength(signal_strength_base, confirmations)
 
         # Calculate confidence
         regime_compatible = self.is_regime_compatible(market_regime)
@@ -314,9 +302,7 @@ class MACDTrendStrategy(BaseStrategy):
 
         # Calculate levels
         suggested_entry = current_price
-        suggested_stop = self.calculate_stop_loss(
-            suggested_entry, direction, atr, Decimal("1.5")
-        )
+        suggested_stop = self.calculate_stop_loss(suggested_entry, direction, atr, Decimal("1.5"))
         suggested_target = self.calculate_take_profit(
             suggested_entry, suggested_stop, direction, Decimal("2.0")
         )

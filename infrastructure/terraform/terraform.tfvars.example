@@ -1,0 +1,75 @@
+# Example Terraform variables file
+# Copy this to terraform.tfvars and fill in your values
+# NEVER commit terraform.tfvars to git!
+
+# ==============================================================================
+# REQUIRED VARIABLES
+# ==============================================================================
+
+# Your email address for ownership tagging and alarm notifications
+owner_email = "your-email@example.com"
+alarm_email = "your-email@example.com"
+
+# Alpaca API credentials (get from https://alpaca.markets)
+# IMPORTANT: These will be used for PAPER TRADING only
+alpaca_api_key    = "YOUR_ALPACA_API_KEY"
+alpaca_api_secret = "YOUR_ALPACA_API_SECRET"
+
+# ==============================================================================
+# OPTIONAL VARIABLES (defaults provided)
+# ==============================================================================
+
+# AWS Configuration
+aws_region  = "us-east-1"
+environment = "production"
+
+# Discord webhook URL for notifications (optional)
+# Get from Discord: Server Settings > Integrations > Webhooks
+discord_webhook_url = ""  # Leave empty to disable Discord notifications
+
+# SSH Access (optional)
+# Add your public IP to allow SSH access to dashboard EC2
+# Find your IP: curl ifconfig.me
+ssh_allowed_cidr = []  # e.g., ["203.0.113.25/32"]
+
+# ==============================================================================
+# ADVANCED CONFIGURATION (use defaults unless needed)
+# ==============================================================================
+
+# VPC Configuration
+# vpc_cidr             = "10.0.0.0/16"
+# public_subnet_cidrs  = ["10.0.1.0/24", "10.0.2.0/24"]
+# private_subnet_cidrs = ["10.0.10.0/24", "10.0.11.0/24"]
+
+# RDS Configuration
+# rds_instance_class          = "db.t3.micro"
+# rds_allocated_storage       = 20
+# rds_engine_version          = "16.1"
+# rds_database_name           = "trading_db"
+# rds_username                = "trading_admin"
+# rds_backup_retention_days   = 7
+# rds_multi_az                = false  # Enable for production HA
+
+# ElastiCache Configuration
+# elasticache_node_type       = "cache.t3.micro"
+# elasticache_engine_version  = "7.0"
+# elasticache_num_cache_nodes = 1
+
+# Lambda Configuration
+# lambda_runtime                = "python3.11"
+# lambda_trading_loop_memory    = 512
+# lambda_trading_loop_timeout   = 60
+# lambda_settlement_memory      = 256
+# lambda_settlement_timeout     = 30
+
+# EventBridge Schedules (cron format, UTC timezone)
+# trading_loop_schedule = "cron(*/1 9-16 ? * MON-FRI *)"  # Every 1 min, 9 AM-4 PM ET
+# settlement_schedule   = "cron(0 16 ? * MON-FRI *)"     # Daily at 4 PM ET
+
+# EC2 Dashboard Configuration
+# ec2_instance_type   = "t3.micro"
+# ec2_volume_size     = 20
+# dashboard_port      = 8501
+
+# CloudWatch Configuration
+# cloudwatch_log_retention_days = 14

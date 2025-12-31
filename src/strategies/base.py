@@ -182,7 +182,11 @@ class BaseStrategy(ABC):
         return True
 
     def calculate_stop_loss(
-        self, entry_price: Decimal, direction: SignalDirection, atr: Decimal, atr_multiple: Decimal = Decimal("2.0")
+        self,
+        entry_price: Decimal,
+        direction: SignalDirection,
+        atr: Decimal,
+        atr_multiple: Decimal = Decimal("2.0"),
     ) -> Decimal:
         """
         Calculate stop loss level based on ATR.
@@ -230,9 +234,7 @@ class BaseStrategy(ABC):
         else:  # SHORT
             return entry_price - reward
 
-    def calculate_signal_strength(
-        self, primary_score: float, confirmations: list[bool]
-    ) -> Decimal:
+    def calculate_signal_strength(self, primary_score: float, confirmations: list[bool]) -> Decimal:
         """
         Calculate signal strength (0-100) based on primary score and confirmations.
 

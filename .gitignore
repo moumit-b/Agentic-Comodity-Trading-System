@@ -1,19 +1,51 @@
 # Secrets
 .env
 .env.*
+*.key
+*.pem
 
 # Local context packs (not committed for now)
 context/local/
 
-# Claude local settings
+# Claude local settings and state
 .claude/settings.local.json
-
-# State
 .claude/.state/
 
 # Python
 .venv/
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
 .pytest_cache/
 .ruff_cache/
+.mypy_cache/
+*.egg-info/
+dist/
+build/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Data files (trading system specific)
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+logs/
+*.log
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+#personal docs
+COST_TRACKING.md

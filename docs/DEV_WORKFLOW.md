@@ -419,61 +419,127 @@ allowed-tools: Bash, Read, Grep, Glob, Write
 
 Use hooks for guardrails and gentle automation, not heavy work every edit.
 
-### .claude/hooks/session_start.ps1
+### Implementation Choice: Python vs PowerShell
 
-```powershell
-Write-Output "[SessionStart] Remember: Moumit controls git. Use /checkpoint after meaningful chunks."
+**Decision:** Use Python hooks (not PowerShell) for consistency with the codebase.
+
+**Rationale:**
+- Hooks need to parse tool inputs (JSON), Python's stdlib makes this easier
+- Cross-platform potential (if ever needed)
+- Simpler testing (pytest vs Pester)
+- Can import project utilities if needed later
+
+**Trade-off:** Requires Python in PATH, but we already have .venv
+
+### Hook Implementations
+
+#### .claude/hooks/git_guard.py
+
+Guards against accidental git commits/pushes:
+```python
+#!/usr/bin/env python3
+import sys
+import json
+
+# Read tool input from stdin (JSON payload from Claude Code)
+payload = json.loads(sys.stdin.read()) if not sys.stdin.isatty() else {}
+command = payload.get("command", "")
+
+blocked = ["git commit", "git push", "git rebase", "git reset", "git cherry-pick"]
+
+for blocked_cmd in blocked:
+    if command.strip().startswith(blocked_cmd):
+        print(f"BLOCKED: Moumit controls git. Attempted: {command}", file=sys.stderr)
+        sys.exit(2)  # Non-zero exit blocks the tool
+
+sys.exit(0)  # Allow the tool to proceed
 ```
 
-### .claude/hooks/pre_tool_use.ps1
+#### .claude/hooks/touch_marker.py
 
-```powershell
-param([string]$cmd)
+Marks that files have changed (can trigger quality gates later):
+```python
+#!/usr/bin/env python3
+import sys
+from pathlib import Path
+from datetime import datetime
 
-$blocked = @(
-    "git commit",
-    "git push",
-    "git rebase",
-    "git reset",
-    "git cherry-pick"
-)
-
-foreach ($b in $blocked) {
-    if ($cmd -like "$b*") {
-        Write-Output "BLOCKED: Moumit controls git actions. Attempted: $cmd"
-        exit 2
-    }
-}
-
-exit 0
+marker_file = Path(".claude/.state/files_modified_marker.txt")
+marker_file.parent.mkdir(parents=True, exist_ok=True)
+marker_file.write_text(f"Modified at {datetime.now().isoformat()}\n")
+sys.exit(0)
 ```
 
-### .claude/hooks/pre_compact.ps1
+#### .claude/hooks/stop_quality_gate.py
 
-```powershell
-Write-Output "[PreCompact] Refreshing local context pack before compaction..."
-powershell -ExecutionPolicy Bypass -File scripts/gemini_context_pack.ps1 -Force
+Runs quality gates when Claude stops (if files were modified):
+```python
+#!/usr/bin/env python3
+import sys
+import subprocess
+from pathlib import Path
+
+marker_file = Path(".claude/.state/files_modified_marker.txt")
+
+if not marker_file.exists():
+    print("[StopHook] No files modified, skipping quality gate.")
+    sys.exit(0)
+
+marker_file.unlink()  # Clear marker
+
+print("[StopHook] Running quality gate (ruff check)...")
+result = subprocess.run(["ruff", "check", ".", "--fix"], capture_output=True, text=True)
+if result.returncode != 0:
+    print(result.stdout)
+    print(result.stderr, file=sys.stderr)
+    print("[StopHook] Quality gate failed. Fix issues before next session.", file=sys.stderr)
+    # Don't block stop, just warn
+sys.exit(0)
 ```
 
-### .claude/settings.local.json
+### .claude/settings.local.json (Actual Implementation)
 
 ```json
 {
   "hooks": {
-    "SessionStart": [
-      { "command": "powershell -ExecutionPolicy Bypass -File .claude/hooks/session_start.ps1" }
-    ],
     "PreToolUse": [
-      { "command": "powershell -ExecutionPolicy Bypass -File .claude/hooks/pre_tool_use.ps1 $CLAUDE_TOOL_INPUT" }
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "./.venv/Scripts/python.exe .claude/hooks/git_guard.py"
+          }
+        ]
+      }
     ],
-    "PreCompact": [
-      { "command": "powershell -ExecutionPolicy Bypass -File .claude/hooks/pre_compact.ps1" }
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "./.venv/Scripts/python.exe .claude/hooks/touch_marker.py"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "./.venv/Scripts/python.exe .claude/hooks/stop_quality_gate.py"
+          }
+        ]
+      }
     ]
   }
 }
 ```
 
-> **Note:** Hook payload/env var names can differ by version. If `$CLAUDE_TOOL_INPUT` isn't available, adapt to actual hook payload.
+> **Note:** Hook environment/payload format varies by Claude Code version. Test hooks with `claude test-hooks` if available, or manually trigger to verify they work.
 
 ---
 

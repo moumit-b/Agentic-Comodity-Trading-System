@@ -32,7 +32,9 @@ class Bar1m(Base):
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     symbol: Mapped[str] = mapped_column(String(10), nullable=False)
-    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    timestamp: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), primary_key=True, nullable=False
+    )
     open: Mapped[Decimal] = mapped_column(Numeric(10, 4), nullable=False)
     high: Mapped[Decimal] = mapped_column(Numeric(10, 4), nullable=False)
     low: Mapped[Decimal] = mapped_column(Numeric(10, 4), nullable=False)

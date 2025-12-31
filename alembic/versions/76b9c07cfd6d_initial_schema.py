@@ -22,6 +22,7 @@ def upgrade() -> None:
     """Create all trading system tables."""
 
     # ===== 1. Bars (1-minute, partitioned by month) =====
+    # NOTE: Partitioned tables require partition key in primary key
     op.create_table(
         'bars_1m',
         sa.Column('id', sa.BigInteger(), autoincrement=True, nullable=False),
@@ -34,7 +35,7 @@ def upgrade() -> None:
         sa.Column('volume', sa.BigInteger(), nullable=False),
         sa.Column('vwap', sa.Numeric(precision=10, scale=4), nullable=True),
         sa.Column('trade_count', sa.Integer(), nullable=True),
-        sa.PrimaryKeyConstraint('id'),
+        sa.PrimaryKeyConstraint('id', 'timestamp'),  # Include partition key
         sa.UniqueConstraint('symbol', 'timestamp', name='uq_bars_1m_symbol_timestamp'),
         postgresql_partition_by='RANGE (timestamp)',
     )

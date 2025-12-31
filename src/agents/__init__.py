@@ -1,5 +1,6 @@
 """Agent modules for the trading system."""
 
+from .execution_agent import ExecutionAgent, ExecutionDecision, ExecutionResult
 from .market_data import MarketDataAgent
 from .risk_manager import PortfolioRisk, RiskDecision, RiskManagerAgent
 from .settlement_tracker import SettlementStatus, SettlementTrackerAgent
@@ -11,6 +12,9 @@ from .strategy_selector import (
 )
 
 __all__ = [
+    "ExecutionAgent",
+    "ExecutionDecision",
+    "ExecutionResult",
     "MarketDataAgent",
     "PortfolioRisk",
     "RiskDecision",

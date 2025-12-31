@@ -10,14 +10,42 @@ authors = [
 ]
 
 dependencies = [
+    # Data & Analysis
     "pandas>=2.2.0",
     "numpy>=1.26.0",
     "yfinance>=0.2.0",
     "pandas-ta>=0.3.14b",
+
+    # HTTP & Networking
     "httpx>=0.27.0",
+    "websockets>=12.0",
+    "aiohttp>=3.9.0",
+
+    # Configuration & Validation
     "pydantic>=2.5.0",
     "pydantic-settings>=2.1.0",
+
+    # Trading APIs
     "alpaca-py>=0.20.0",
+
+    # Database
+    "asyncpg>=0.29.0",
+    "sqlalchemy>=2.0.0",
+    "alembic>=1.13.0",
+    "redis>=5.0.0",
+
+    # Dashboard
+    "streamlit>=1.29.0",
+    "plotly>=5.18.0",
+
+    # Notifications
+    "discord.py>=2.3.0",
+
+    # AWS
+    "boto3>=1.34.0",
+    "aioboto3>=12.0.0",
+
+    # Scheduling
     "schedule>=1.2.0",
 ]
 
@@ -29,6 +57,7 @@ dev = [
     "pytest-cov>=4.1.0",
     "mypy>=1.8.0",
     "types-requests",
+    "psycopg2-binary>=2.9.0",  # Required for Alembic migrations (sync driver)
 ]
 
 [build-system]

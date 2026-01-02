@@ -2,14 +2,14 @@
 
 import asyncio
 import logging
-from datetime import datetime
 
 import streamlit as st
+from sqlalchemy import text
 
 from dashboard.config import COLORS
 from dashboard.utils.data_loader import load_account_status
 from dashboard.utils.formatters import format_currency, format_timestamp
-from src.core.config import TradingConfig
+from src.core.config import RedisConfig, TradingConfig
 from src.core.database import get_session
 from src.services.circuit_breakers import CircuitBreakerService
 from src.services.redis_cache import RedisCache
@@ -37,7 +37,7 @@ def check_database_status() -> bool:
 
         async def _check():
             async with get_session() as session:
-                await session.execute("SELECT 1")
+                await session.execute(text("SELECT 1"))
                 return True
 
         return run_async(_check())
@@ -48,8 +48,9 @@ def check_database_status() -> bool:
 def check_redis_status() -> bool:
     """Check if Redis is accessible."""
     try:
-        redis = RedisCache()
-        return run_async(redis.health_check())
+        redis = RedisCache(RedisConfig())
+        redis.connect()
+        return redis.health_check()
     except Exception:
         return False
 

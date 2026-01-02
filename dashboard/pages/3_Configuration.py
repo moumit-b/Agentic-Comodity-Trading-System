@@ -194,23 +194,23 @@ with tab3:
     with col2:
         st.write("**Drawdown Protection**")
 
-        # Max drawdown
+        # Max drawdown (using daily loss limit as proxy)
         max_drawdown = st.slider(
-            "Max Drawdown (%)",
-            min_value=5,
-            max_value=50,
-            value=int(config.max_drawdown_pct * 100),
-            step=5,
-            help="Maximum account drawdown before halting trading",
+            "Max Daily Loss (%)",
+            min_value=1,
+            max_value=10,
+            value=int(config.daily_loss_limit_pct * 100),
+            step=1,
+            help="Maximum daily loss before halting trading",
             disabled=True,
         )
 
-        # Volatility multiplier
+        # Volatility multiplier (placeholder - not in config)
         volatility_multiplier = st.slider(
             "Volatility Spike Multiplier",
             min_value=1.5,
             max_value=5.0,
-            value=float(config.volatility_spike_multiplier),
+            value=2.5,
             step=0.1,
             help="Circuit breaker trips if volatility exceeds this multiple of average",
             disabled=True,

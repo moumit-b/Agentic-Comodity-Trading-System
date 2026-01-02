@@ -58,14 +58,11 @@ def render_signal_feed():
     st.caption(f"Showing {len(filtered_df)} of {len(signals_df)} signals")
 
     # Display signals
-    for idx, signal in filtered_df.iterrows():
-        # Get corresponding decision if exists
+    for _idx, signal in filtered_df.iterrows():
+        # Get corresponding decision if exists (match by signal_id)
         decision = None
         if not decisions_df.empty:
-            matching_decisions = decisions_df[
-                (decisions_df["symbol"] == signal["symbol"])
-                & (abs((decisions_df["timestamp"] - signal["timestamp"]).total_seconds()) < 60)
-            ]
+            matching_decisions = decisions_df[decisions_df["signal_id"] == signal["id"]]
             if not matching_decisions.empty:
                 decision = matching_decisions.iloc[0]
 
@@ -93,11 +90,11 @@ def render_signal_feed():
                 # Approval status
                 if decision is not None:
                     if decision["approved"]:
-                        st.markdown(f":green[✓ APPROVED]")
+                        st.markdown(":green[✓ APPROVED]")
                     else:
-                        st.markdown(f":red[✗ REJECTED]")
+                        st.markdown(":red[✗ REJECTED]")
                 else:
-                    st.markdown(f":gray[PENDING]")
+                    st.markdown(":gray[PENDING]")
 
             # Details row
             col1, col2, col3, col4 = st.columns(4)
@@ -185,13 +182,7 @@ def render_signal_feed():
                 total_with_decisions = 0
 
                 for _, signal in filtered_df.iterrows():
-                    matching = decisions_df[
-                        (decisions_df["symbol"] == signal["symbol"])
-                        & (
-                            abs((decisions_df["timestamp"] - signal["timestamp"]).total_seconds())
-                            < 60
-                        )
-                    ]
+                    matching = decisions_df[decisions_df["signal_id"] == signal["id"]]
                     if not matching.empty:
                         total_with_decisions += 1
                         if matching.iloc[0]["approved"]:

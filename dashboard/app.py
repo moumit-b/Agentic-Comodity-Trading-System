@@ -11,6 +11,14 @@ from dashboard.components.price_chart import render_price_chart
 from dashboard.components.risk_gauges import render_risk_gauges
 from dashboard.components.signal_feed import render_signal_feed
 from dashboard.config import AUTO_REFRESH_INTERVAL, DASHBOARD_TITLE, PAGE_ICON
+from src.core.config import DatabaseConfig
+from src.core.database import init_db
+
+# Initialize database connection
+if "db_initialized" not in st.session_state:
+    db_config = DatabaseConfig()
+    init_db(db_config)
+    st.session_state.db_initialized = True
 
 # Page configuration
 st.set_page_config(

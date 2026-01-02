@@ -5,7 +5,6 @@ import streamlit as st
 from dashboard.config import DASHBOARD_TITLE, PAGE_ICON
 from dashboard.utils.data_loader import load_decisions, load_signals
 from dashboard.utils.formatters import (
-    format_confidence,
     format_currency,
     format_percentage,
     format_timestamp,

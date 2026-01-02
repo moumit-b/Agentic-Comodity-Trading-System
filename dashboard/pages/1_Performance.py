@@ -10,7 +10,7 @@ from dashboard.utils.data_loader import (
     load_executions,
     load_positions,
 )
-from dashboard.utils.formatters import format_currency, format_percentage
+from dashboard.utils.formatters import format_currency
 
 # Page configuration
 st.set_page_config(

@@ -2,20 +2,19 @@
 
 import asyncio
 import logging
-from datetime import datetime, timedelta
-from typing import Any
+from datetime import datetime
 
 import pandas as pd
 import pandas_ta as ta
+from alpaca.data.historical import StockHistoricalDataClient
 from alpaca.data.live import StockDataStream
 from alpaca.data.models import Bar
 from alpaca.data.requests import StockBarsRequest
 from alpaca.data.timeframe import TimeFrame, TimeFrameUnit
-from alpaca.data.historical import StockHistoricalDataClient
 
 from src.core.config import AlpacaConfig, RedisConfig
 from src.core.database import get_session
-from src.models.bars import Bar1m, BarAggregated, Indicator
+from src.models.bars import Bar1m, Indicator
 from src.services.redis_cache import RedisCache
 
 logger = logging.getLogger(__name__)

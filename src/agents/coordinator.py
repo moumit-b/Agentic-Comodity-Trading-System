@@ -2,7 +2,6 @@
 
 import logging
 from dataclasses import dataclass
-from datetime import datetime
 from decimal import Decimal
 
 from src.agents.execution_agent import ExecutionAgent, ExecutionDecision
@@ -11,7 +10,6 @@ from src.agents.settlement_tracker import SettlementTrackerAgent
 from src.agents.strategy_pool import StrategyPoolAgent
 from src.agents.strategy_selector import StrategySelectorAgent
 from src.core.config import TradingConfig
-from src.services.alpaca_api import AlpacaService
 from src.services.circuit_breakers import CircuitBreakerService
 from src.services.discord_notifier import DiscordNotifier
 from src.strategies import Signal

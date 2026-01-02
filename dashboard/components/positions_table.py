@@ -6,8 +6,8 @@ from dashboard.config import COLORS
 from dashboard.utils.data_loader import load_positions
 from dashboard.utils.formatters import (
     format_currency,
-    format_pnl,
     format_percentage,
+    format_pnl,
     format_shares,
     format_timestamp,
 )

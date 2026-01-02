@@ -7,7 +7,7 @@ import streamlit as st
 
 from dashboard.config import COLORS
 from dashboard.utils.data_loader import load_pending_confirmations
-from dashboard.utils.formatters import format_currency, format_timestamp
+from dashboard.utils.formatters import format_timestamp
 from src.agents.execution_agent import ExecutionAgent
 from src.core.config import AutomationMode, TradingConfig
 

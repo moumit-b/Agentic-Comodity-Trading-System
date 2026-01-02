@@ -8,6 +8,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+
 def main():
     """Run the Streamlit dashboard."""
     # Get project root

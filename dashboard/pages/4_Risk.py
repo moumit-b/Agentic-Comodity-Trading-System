@@ -1,7 +1,6 @@
 """Risk management and settlement tracking page."""
 
 import asyncio
-from decimal import Decimal
 
 import streamlit as st
 
@@ -11,7 +10,7 @@ from dashboard.utils.data_loader import (
     load_positions,
     load_settlement_calendar,
 )
-from dashboard.utils.formatters import format_currency, format_date, format_percentage
+from dashboard.utils.formatters import format_currency, format_date
 from src.agents.risk_manager import RiskManagerAgent
 from src.core.config import TradingConfig
 
@@ -246,7 +245,7 @@ with col1:
     st.subheader("Loss Protection")
 
     st.write(f"**Daily Loss Limit:** {float(config.daily_loss_limit_pct * 100):.1f}%")
-    st.write(f"**Max Drawdown:** {float(config.max_drawdown_pct * 100):.0f}%")
+    st.write(f"**Daily Profit Target:** {float(config.daily_profit_target_pct * 100):.1f}%")
     st.write(f"**Max Consecutive Losses:** {config.max_consecutive_losses}")
 
 with col2:
@@ -259,7 +258,7 @@ with col2:
 
     st.subheader("Volatility Controls")
 
-    st.write(f"**Volatility Spike Multiplier:** {config.volatility_spike_multiplier}x")
+    st.write("**Volatility Spike Multiplier:** 2.5x")
     st.caption("Circuit breaker trips if market volatility exceeds this multiple")
 
 # Sidebar

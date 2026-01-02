@@ -290,7 +290,7 @@ def create_equity_curve(
             x=daily_performance_df["date"],
             y=daily_performance_df["equity"],
             fill="tonexty",
-            fillcolor=f"rgba(255, 75, 75, 0.3)",
+            fillcolor="rgba(255, 75, 75, 0.3)",
             mode="lines",
             line=dict(width=0),
             showlegend=False,

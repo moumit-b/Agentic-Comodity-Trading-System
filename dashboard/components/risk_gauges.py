@@ -1,7 +1,6 @@
 """Risk gauges component for displaying portfolio heat and risk metrics."""
 
 import asyncio
-from decimal import Decimal
 
 import streamlit as st
 

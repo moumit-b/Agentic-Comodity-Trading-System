@@ -5,17 +5,16 @@ Creates fake signals, decisions, executions, and positions.
 """
 
 import asyncio
-from datetime import datetime, timedelta, timezone
-from decimal import Decimal
 import random
+from datetime import UTC, datetime, timedelta
+from decimal import Decimal
 
-from src.core.database import get_session, init_db, shutdown_db
 from src.core.config import DatabaseConfig
-from src.models.bars import Bar1m, Indicator
-from src.models.execution import Decision, Execution
-from src.models.signal import Signal
-from src.models.position import Position
+from src.core.database import get_session, init_db, shutdown_db
 from src.models.account import DailyLimit
+from src.models.execution import Decision, Execution
+from src.models.position import Position
+from src.models.signal import Signal
 
 
 async def seed_sample_data():
@@ -41,7 +40,7 @@ async def seed_sample_data():
 
         # Skip bars_1m (partitioned table - would need partitions created)
         print("Skipping 1m bars (partitioned table)...")
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         symbols = ["USO", "UNG"]
 
         # Create sample signals
@@ -169,7 +168,7 @@ async def seed_sample_data():
         # Create daily limit record
         print("Creating daily limit record...")
         daily_limit = DailyLimit(
-            trade_date=datetime.now(timezone.utc).date(),
+            trade_date=datetime.now(UTC).date(),
             starting_equity=Decimal("10000.00"),
             current_pnl=Decimal(str(random.uniform(-100, 200))),
             trades_executed=len(executions),
@@ -186,10 +185,10 @@ async def seed_sample_data():
     print(f"  - {len(decisions)} decisions ({sum(1 for d in decisions if d.decision == 'APPROVE')} approved)")
     print(f"  - {len(executions)} executions ({sum(1 for e in executions if e.status == 'FILLED')} filled)")
     print(f"  - {len(positions)} open positions")
-    print(f"  - 1 daily limit record")
-    print(f"\n[READY] Dashboard is ready to view!")
-    print(f"  Run: uv run streamlit run dashboard/app.py")
-    print(f"  URL: http://localhost:8501")
+    print("  - 1 daily limit record")
+    print("\n[READY] Dashboard is ready to view!")
+    print("  Run: uv run streamlit run dashboard/app.py")
+    print("  URL: http://localhost:8501")
 
     # Close database connection
     await shutdown_db()

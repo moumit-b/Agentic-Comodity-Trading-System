@@ -3,7 +3,6 @@
 from decimal import Decimal
 from enum import Enum
 from functools import lru_cache
-from typing import Annotated
 
 from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -35,6 +34,7 @@ class TradingConfig(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=False,
+        extra="ignore",
     )
 
     # === Symbols & Timeframes ===
@@ -101,6 +101,7 @@ class DatabaseConfig(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=False,
+        extra="ignore",
     )
 
     host: str = Field(default="localhost")
@@ -143,6 +144,7 @@ class RedisConfig(BaseSettings):
         env_prefix="REDIS_",
         env_file=".env",
         env_file_encoding="utf-8",
+        extra="ignore",
         case_sensitive=False,
     )
 
@@ -178,6 +180,7 @@ class AlpacaConfig(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=False,
+        extra="ignore",
     )
 
     api_key: SecretStr = Field(default=SecretStr(""), description="Alpaca API key (paper or live)")
@@ -227,6 +230,7 @@ class DiscordConfig(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=False,
+        extra="ignore",
     )
 
     bot_token: SecretStr = Field(default=SecretStr(""), description="Discord bot token")
@@ -252,6 +256,7 @@ class AWSConfig(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=False,
+        extra="ignore",
     )
 
     region: str = Field(default="us-east-1")

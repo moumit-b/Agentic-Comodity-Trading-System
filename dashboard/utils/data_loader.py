@@ -10,9 +10,10 @@ import pandas as pd
 import streamlit as st
 from sqlalchemy import select
 
+from src.core.config import AlpacaConfig
 from src.core.database import get_session
-from src.models.account import AccountSnapshot, DailyLimit
-from src.models.bars import Bar1m, BarAggregated, Indicator
+from src.models.account import DailyLimit
+from src.models.bars import Bar1m, Indicator
 from src.models.execution import Decision, Execution
 from src.models.position import Position
 from src.models.risk import CircuitBreaker
@@ -42,7 +43,7 @@ def run_async(coro):
 def load_account_status() -> dict[str, Any]:
     """Load current account status from Alpaca."""
     try:
-        alpaca = AlpacaService()
+        alpaca = AlpacaService(AlpacaConfig())
         account = run_async(alpaca.get_account())
 
         return {
@@ -71,7 +72,7 @@ def load_positions() -> pd.DataFrame:
 
     async def _load():
         async with get_session() as session:
-            stmt = select(Position).where(Position.status == "OPEN")
+            stmt = select(Position).where(Position.is_open == True)
             result = await session.execute(stmt)
             positions = result.scalars().all()
 
@@ -80,6 +81,7 @@ def load_positions() -> pd.DataFrame:
 
             data = []
             for pos in positions:
+                # Position doesn't have current_price, unrealized_pnl, unrealized_pnl_pct, opened_at
                 data.append(
                     {
                         "id": pos.id,
@@ -87,12 +89,12 @@ def load_positions() -> pd.DataFrame:
                         "side": pos.side,
                         "qty": pos.qty,
                         "entry_price": pos.entry_price,
-                        "current_price": pos.current_price or pos.entry_price,
+                        "current_price": pos.entry_price,
                         "stop_loss": pos.stop_loss,
                         "take_profit": pos.take_profit,
-                        "unrealized_pnl": pos.unrealized_pnl or Decimal("0"),
-                        "unrealized_pnl_pct": pos.unrealized_pnl_pct or Decimal("0"),
-                        "opened_at": pos.opened_at,
+                        "unrealized_pnl": Decimal("0"),
+                        "unrealized_pnl_pct": Decimal("0"),
+                        "opened_at": pos.entry_time,
                     }
                 )
 
@@ -125,7 +127,7 @@ def load_signals(limit: int = 50) -> pd.DataFrame:
                         "id": sig.id,
                         "timestamp": sig.timestamp,
                         "symbol": sig.symbol,
-                        "direction": sig.direction.value,
+                        "direction": sig.direction,
                         "strategy_name": sig.strategy_name,
                         "timeframe": sig.timeframe,
                         "confidence": sig.confidence,
@@ -160,13 +162,15 @@ def load_decisions(limit: int = 100) -> pd.DataFrame:
 
             data = []
             for dec in decisions:
+                # Decision is APPROVE or REJECT
+                approved = dec.decision == "APPROVE"
                 data.append(
                     {
                         "id": dec.id,
                         "timestamp": dec.timestamp,
-                        "symbol": dec.symbol,
-                        "approved": dec.approved,
-                        "rejection_reason": dec.rejection_reason or "",
+                        "signal_id": dec.signal_id,
+                        "approved": approved,
+                        "rejection_reason": dec.reason if not approved else "",
                         "position_size": dec.position_size,
                         "risk_amount": dec.risk_amount,
                         "risk_pct": dec.risk_pct,
@@ -188,7 +192,7 @@ def load_executions(limit: int = 50) -> pd.DataFrame:
 
     async def _load():
         async with get_session() as session:
-            stmt = select(Execution).order_by(Execution.created_at.desc()).limit(limit)
+            stmt = select(Execution).order_by(Execution.timestamp.desc()).limit(limit)
             result = await session.execute(stmt)
             executions = result.scalars().all()
 
@@ -200,7 +204,7 @@ def load_executions(limit: int = 50) -> pd.DataFrame:
                 data.append(
                     {
                         "id": ex.id,
-                        "created_at": ex.created_at,
+                        "created_at": ex.timestamp,
                         "symbol": ex.symbol,
                         "side": ex.side,
                         "qty": ex.qty,
@@ -240,7 +244,7 @@ def load_pending_confirmations() -> pd.DataFrame:
                 data.append(
                     {
                         "id": ex.id,
-                        "created_at": ex.created_at,
+                        "created_at": ex.timestamp,
                         "symbol": ex.symbol,
                         "side": ex.side,
                         "qty": ex.qty,
@@ -263,7 +267,7 @@ def load_circuit_breakers() -> pd.DataFrame:
 
     async def _load():
         async with get_session() as session:
-            stmt = select(CircuitBreaker).order_by(CircuitBreaker.triggered_at.desc())
+            stmt = select(CircuitBreaker).order_by(CircuitBreaker.timestamp.desc())
             result = await session.execute(stmt)
             breakers = result.scalars().all()
 
@@ -276,7 +280,7 @@ def load_circuit_breakers() -> pd.DataFrame:
                     {
                         "id": br.id,
                         "breaker_type": br.breaker_type,
-                        "triggered_at": br.triggered_at,
+                        "triggered_at": br.timestamp,
                         "cleared_at": br.cleared_at,
                         "reason": br.reason,
                         "is_active": br.cleared_at is None,
@@ -339,7 +343,7 @@ def load_daily_performance() -> pd.DataFrame:
 
     async def _load():
         async with get_session() as session:
-            stmt = select(DailyLimit).order_by(DailyLimit.date.desc()).limit(30)
+            stmt = select(DailyLimit).order_by(DailyLimit.trade_date.desc()).limit(30)
             result = await session.execute(stmt)
             daily_limits = result.scalars().all()
 
@@ -350,9 +354,9 @@ def load_daily_performance() -> pd.DataFrame:
             for dl in daily_limits:
                 data.append(
                     {
-                        "date": dl.date,
-                        "trades_count": dl.trades_count,
-                        "daily_pnl": dl.daily_pnl,
+                        "date": dl.trade_date,
+                        "trades_count": dl.trades_executed,
+                        "daily_pnl": dl.current_pnl,
                         "consecutive_losses": dl.consecutive_losses,
                     }
                 )

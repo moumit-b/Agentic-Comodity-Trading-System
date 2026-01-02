@@ -2,13 +2,12 @@
 
 import logging
 from dataclasses import dataclass
-from datetime import date
 from decimal import Decimal
 
 from src.core.config import TradingConfig
 from src.core.database import get_session
 from src.models.position import Position
-from src.strategies import Signal, SignalDirection
+from src.strategies import Signal
 
 logger = logging.getLogger(__name__)
 

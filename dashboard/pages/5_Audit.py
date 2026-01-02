@@ -152,7 +152,7 @@ if not filtered_df.empty:
                         st.write(f"Risk Amount: {format_currency(decision['risk_amount'])}")
                         st.write(f"Risk %: {format_percentage(decision['risk_pct'])}")
                     else:
-                        st.write(f"**Rejection Reason:**")
+                        st.write("**Rejection Reason:**")
                         st.error(decision["rejection_reason"])
 
                 with col2:

@@ -11,6 +11,7 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
+
 def test_connection():
     """Test Alpaca API connection."""
     print("=" * 60)
@@ -74,6 +75,7 @@ def test_connection():
     print("   3. Open: http://localhost:8501")
 
     return True
+
 
 if __name__ == "__main__":
     success = test_connection()

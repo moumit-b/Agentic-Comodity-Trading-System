@@ -1,5 +1,7 @@
 """Positions table component showing open positions with P&L."""
 
+from datetime import timedelta
+
 import streamlit as st
 
 from dashboard.config import COLORS
@@ -13,6 +15,7 @@ from dashboard.utils.formatters import (
 )
 
 
+@st.fragment(run_every=timedelta(seconds=5))
 def render_positions_table():
     """Render open positions table."""
     st.subheader("Open Positions")

@@ -1,7 +1,7 @@
 """Order confirmation component for LIVE_CONFIRM mode."""
 
 import asyncio
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import streamlit as st
 
@@ -26,6 +26,7 @@ def run_async(coro):
     return loop.run_until_complete(coro)
 
 
+@st.fragment(run_every=timedelta(seconds=5))
 def render_order_confirmation():
     """Render pending order confirmations (LIVE_CONFIRM mode only)."""
     # Check if system is in LIVE_CONFIRM mode

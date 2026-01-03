@@ -1,6 +1,7 @@
 """Risk gauges component for displaying portfolio heat and risk metrics."""
 
 import asyncio
+from datetime import timedelta
 
 import streamlit as st
 
@@ -25,6 +26,7 @@ def run_async(coro):
     return loop.run_until_complete(coro)
 
 
+@st.fragment(run_every=timedelta(seconds=5))
 def render_risk_gauges():
     """Render risk gauge charts."""
     st.subheader("Risk Metrics")

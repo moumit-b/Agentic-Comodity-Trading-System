@@ -45,7 +45,12 @@ async def seed_sample_data():
 
         # Create sample signals
         print("Creating sample signals...")
-        strategies = ["EMA Crossover", "MACD Trend", "Bollinger Bands Mean Reversion", "RSI Oversold/Overbought"]
+        strategies = [
+            "EMA Crossover",
+            "MACD Trend",
+            "Bollinger Bands Mean Reversion",
+            "RSI Oversold/Overbought",
+        ]
         signals = []
 
         for i in range(20):
@@ -86,14 +91,18 @@ async def seed_sample_data():
                 signal_id=signal.id,
                 timestamp=signal.timestamp + timedelta(seconds=5),
                 decision="APPROVE" if approved else "REJECT",
-                reason=None if approved else random.choice([
-                    "Insufficient buying power",
-                    "Max positions reached",
-                    "Portfolio heat exceeded",
-                    "Daily loss limit reached",
-                    "Volatility spike detected",
-                    "Low confidence score",
-                ]),
+                reason=None
+                if approved
+                else random.choice(
+                    [
+                        "Insufficient buying power",
+                        "Max positions reached",
+                        "Portfolio heat exceeded",
+                        "Daily loss limit reached",
+                        "Volatility spike detected",
+                        "Low confidence score",
+                    ]
+                ),
                 position_size=Decimal(str(random.randint(10, 100))) if approved else None,
                 risk_amount=Decimal(str(random.uniform(50, 200))) if approved else None,
                 risk_pct=Decimal(str(random.uniform(0.005, 0.02))) if approved else None,
@@ -126,8 +135,12 @@ async def seed_sample_data():
                 qty=decision.position_size,
                 order_type="LIMIT",
                 status=status,
-                filled_price=Decimal(str(float(signal.suggested_entry) + random.uniform(-2, 2))) if status == "FILLED" else None,
-                alpaca_order_id=f"ORDER-{random.randint(1000, 9999)}" if status != "PENDING" else None,
+                filled_price=Decimal(str(float(signal.suggested_entry) + random.uniform(-2, 2)))
+                if status == "FILLED"
+                else None,
+                alpaca_order_id=f"ORDER-{random.randint(1000, 9999)}"
+                if status != "PENDING"
+                else None,
                 requires_confirmation=False,
             )
             executions.append(execution)
@@ -182,8 +195,12 @@ async def seed_sample_data():
 
     print("\n[SUCCESS] Sample data seeded successfully!")
     print(f"  - {len(signals)} signals from 4 strategies")
-    print(f"  - {len(decisions)} decisions ({sum(1 for d in decisions if d.decision == 'APPROVE')} approved)")
-    print(f"  - {len(executions)} executions ({sum(1 for e in executions if e.status == 'FILLED')} filled)")
+    print(
+        f"  - {len(decisions)} decisions ({sum(1 for d in decisions if d.decision == 'APPROVE')} approved)"
+    )
+    print(
+        f"  - {len(executions)} executions ({sum(1 for e in executions if e.status == 'FILLED')} filled)"
+    )
     print(f"  - {len(positions)} open positions")
     print("  - 1 daily limit record")
     print("\n[READY] Dashboard is ready to view!")

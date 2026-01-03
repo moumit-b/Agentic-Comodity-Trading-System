@@ -1,7 +1,6 @@
 """Main Streamlit dashboard application."""
 
 import streamlit as st
-from streamlit_autorefresh import st_autorefresh
 
 from dashboard.components.circuit_breakers import render_circuit_breakers
 from dashboard.components.header import render_header
@@ -10,7 +9,7 @@ from dashboard.components.positions_table import render_positions_table
 from dashboard.components.price_chart import render_price_chart
 from dashboard.components.risk_gauges import render_risk_gauges
 from dashboard.components.signal_feed import render_signal_feed
-from dashboard.config import AUTO_REFRESH_INTERVAL, DASHBOARD_TITLE, PAGE_ICON
+from dashboard.config import DASHBOARD_TITLE, PAGE_ICON
 from src.core.config import DatabaseConfig
 from src.core.database import init_db
 
@@ -27,9 +26,6 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
 )
-
-# Auto-refresh every 5 seconds
-st_autorefresh(interval=AUTO_REFRESH_INTERVAL, limit=None, key="dashboard_refresh")
 
 # Main title
 st.title(f"{PAGE_ICON} {DASHBOARD_TITLE}")
@@ -88,8 +84,4 @@ with st.sidebar:
 
     st.divider()
 
-    st.caption(
-        "Trading System Dashboard v1.0\n\n"
-        f"Auto-refresh: {AUTO_REFRESH_INTERVAL / 1000}s\n\n"
-        "Built with Streamlit"
-    )
+    st.caption("Trading System Dashboard v1.0\n\nBuilt with Streamlit")

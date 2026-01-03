@@ -1,5 +1,7 @@
 """Signal feed component showing recent trading signals."""
 
+from datetime import timedelta
+
 import streamlit as st
 
 from dashboard.config import COLORS, MAX_SIGNAL_DISPLAY
@@ -12,6 +14,7 @@ from dashboard.utils.formatters import (
 )
 
 
+@st.fragment(run_every=timedelta(seconds=5))
 def render_signal_feed():
     """Render real-time signal feed with approval status."""
     st.subheader("Signal Feed")

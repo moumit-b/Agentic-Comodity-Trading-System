@@ -1,5 +1,7 @@
 """Price chart component with candlestick and technical indicators."""
 
+from datetime import timedelta
+
 import streamlit as st
 
 from dashboard.config import CHART_TIMEFRAMES, DEFAULT_TIMEFRAME
@@ -7,6 +9,7 @@ from dashboard.utils.chart_factory import create_candlestick_chart
 from dashboard.utils.data_loader import load_bars_1m, load_indicators, load_positions
 
 
+@st.fragment(run_every=timedelta(seconds=30))
 def render_price_chart():
     """Render interactive price chart with symbol and timeframe selection."""
     st.subheader("Price Chart")

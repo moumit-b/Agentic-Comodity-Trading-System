@@ -1,5 +1,7 @@
 """Circuit breaker status component."""
 
+from datetime import timedelta
+
 import streamlit as st
 
 from dashboard.config import COLORS
@@ -7,6 +9,7 @@ from dashboard.utils.data_loader import load_circuit_breakers
 from dashboard.utils.formatters import format_timestamp
 
 
+@st.fragment(run_every=timedelta(seconds=5))
 def render_circuit_breakers():
     """Render circuit breaker status panel."""
     st.subheader("Circuit Breakers")

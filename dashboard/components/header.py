@@ -2,6 +2,7 @@
 
 import asyncio
 import logging
+from datetime import timedelta
 
 import streamlit as st
 from sqlalchemy import text
@@ -55,6 +56,7 @@ def check_redis_status() -> bool:
         return False
 
 
+@st.fragment(run_every=timedelta(seconds=5))
 def render_header():
     """Render dashboard header with status indicators and controls."""
     # Get account status

@@ -1,14 +1,12 @@
 """Alpaca API service for order execution and account management."""
 
 import logging
-from datetime import datetime
 from decimal import Decimal
-from enum import Enum
 
 from alpaca.trading.client import TradingClient
-from alpaca.trading.enums import OrderSide, OrderType, TimeInForce
-from alpaca.trading.requests import LimitOrderRequest, MarketOrderRequest
+from alpaca.trading.enums import OrderSide, TimeInForce
 from alpaca.trading.models import Order as AlpacaOrder
+from alpaca.trading.requests import LimitOrderRequest, MarketOrderRequest
 
 from src.core.config import AlpacaConfig
 
@@ -151,9 +149,7 @@ class AlpacaService:
             # Submit order
             order = self.client.submit_order(order_data)
 
-            logger.info(
-                f"Submitted market order: {order.id} - {side} {qty} {symbol}"
-            )
+            logger.info(f"Submitted market order: {order.id} - {side} {qty} {symbol}")
 
             return order
 

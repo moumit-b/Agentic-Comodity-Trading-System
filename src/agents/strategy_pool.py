@@ -206,8 +206,7 @@ class StrategyPoolAgent:
         filtered = [
             s
             for s in signals
-            if float(s.confidence) >= min_confidence
-            and float(s.signal_strength) >= min_strength
+            if float(s.confidence) >= min_confidence and float(s.signal_strength) >= min_strength
         ]
 
         logger.info(
@@ -227,9 +226,7 @@ class StrategyPoolAgent:
         Returns:
             Signals sorted by composite score (highest first)
         """
-        scored_signals = [
-            (s, float(s.confidence) * float(s.signal_strength)) for s in signals
-        ]
+        scored_signals = [(s, float(s.confidence) * float(s.signal_strength)) for s in signals]
 
         # Sort by score descending
         scored_signals.sort(key=lambda x: x[1], reverse=True)
@@ -244,9 +241,7 @@ class StrategyPoolAgent:
 
         return ranked
 
-    def get_consensus_signal(
-        self, signals: list[Signal], min_consensus: int = 2
-    ) -> Signal | None:
+    def get_consensus_signal(self, signals: list[Signal], min_consensus: int = 2) -> Signal | None:
         """
         Get consensus signal if multiple strategies agree on direction.
 

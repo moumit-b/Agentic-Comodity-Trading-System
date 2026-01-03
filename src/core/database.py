@@ -1,9 +1,10 @@
 """Database setup and session management using async SQLAlchemy."""
 
 import logging
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
 
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -164,9 +165,7 @@ def get_engine() -> AsyncEngine:
         ...     await conn.execute(text("SELECT 1"))
     """
     if _engine is None:
-        raise RuntimeError(
-            "Database not initialized. Call init_db() at application startup."
-        )
+        raise RuntimeError("Database not initialized. Call init_db() at application startup.")
     return _engine
 
 
@@ -186,9 +185,7 @@ def get_session_factory() -> async_sessionmaker[AsyncSession]:
         ...     result = await session.execute(select(Position))
     """
     if _session_factory is None:
-        raise RuntimeError(
-            "Database not initialized. Call init_db() at application startup."
-        )
+        raise RuntimeError("Database not initialized. Call init_db() at application startup.")
     return _session_factory
 
 
@@ -282,7 +279,7 @@ async def check_connection() -> bool:
     try:
         engine = get_engine()
         async with engine.connect() as conn:
-            await conn.execute("SELECT 1")
+            await conn.execute(text("SELECT 1"))
         logger.info("Database connection check: OK")
         return True
     except Exception as e:

@@ -7,7 +7,7 @@ from decimal import Decimal
 import pandas as pd
 
 from src.core.config import MarketRegime
-from src.strategies import IndicatorSet, StrategyType, TradingHorizon
+from src.strategies import IndicatorSet, TradingHorizon
 
 logger = logging.getLogger(__name__)
 
@@ -169,9 +169,7 @@ class StrategySelectorAgent:
         logger.info("Regime detected: RANGING (default)")
         return MarketRegime.RANGING
 
-    def select_strategies(
-        self, context: StrategySelectionContext
-    ) -> StrategySelectionDecision:
+    def select_strategies(self, context: StrategySelectionContext) -> StrategySelectionDecision:
         """
         Select appropriate strategies based on market context.
 
@@ -197,17 +195,13 @@ class StrategySelectorAgent:
             strategies = ["EMA_Crossover", "MACD_Trend"]
             horizon = self._determine_horizon(context, default=TradingHorizon.BOTH)
             reasoning = (
-                f"TRENDING market: Using trend-following strategies. "
-                f"Horizon: {horizon.value}"
+                f"TRENDING market: Using trend-following strategies. Horizon: {horizon.value}"
             )
 
         elif context.market_regime == MarketRegime.RANGING:
             strategies = ["BollingerBands_MeanReversion", "RSI_OversoldOverbought"]
             horizon = TradingHorizon.INTRADAY  # Mean reversion best intraday
-            reasoning = (
-                f"RANGING market: Using mean-reversion strategies. "
-                f"Horizon: {horizon.value}"
-            )
+            reasoning = f"RANGING market: Using mean-reversion strategies. Horizon: {horizon.value}"
 
         elif context.market_regime == MarketRegime.VOLATILE:
             # In volatile markets, avoid trading or use only high-confidence setups
@@ -253,9 +247,7 @@ class StrategySelectorAgent:
             should_trade=True,
         )
 
-    def _check_trading_allowed(
-        self, context: StrategySelectionContext
-    ) -> tuple[bool, str]:
+    def _check_trading_allowed(self, context: StrategySelectionContext) -> tuple[bool, str]:
         """
         Check if trading is allowed given current context.
 
@@ -267,7 +259,10 @@ class StrategySelectorAgent:
         """
         # Check position limit
         if context.current_positions >= self.max_positions:
-            return False, f"Max positions reached ({context.current_positions}/{self.max_positions})"
+            return (
+                False,
+                f"Max positions reached ({context.current_positions}/{self.max_positions})",
+            )
 
         # Check portfolio heat
         if context.portfolio_heat >= self.max_portfolio_heat:
@@ -321,9 +316,7 @@ class StrategySelectorAgent:
 
         return default
 
-    def should_exit_intraday_positions(
-        self, minutes_until_close: int
-    ) -> tuple[bool, str]:
+    def should_exit_intraday_positions(self, minutes_until_close: int) -> tuple[bool, str]:
         """
         Check if intraday positions should be exited.
 

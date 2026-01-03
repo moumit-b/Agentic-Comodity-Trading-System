@@ -2,20 +2,19 @@
 
 import asyncio
 import logging
-from datetime import datetime, timedelta
-from typing import Any
+from datetime import datetime
 
 import pandas as pd
 import pandas_ta as ta
+from alpaca.data.historical import StockHistoricalDataClient
 from alpaca.data.live import StockDataStream
 from alpaca.data.models import Bar
 from alpaca.data.requests import StockBarsRequest
 from alpaca.data.timeframe import TimeFrame, TimeFrameUnit
-from alpaca.data.historical import StockHistoricalDataClient
 
 from src.core.config import AlpacaConfig, RedisConfig
 from src.core.database import get_session
-from src.models.bars import Bar1m, BarAggregated, Indicator
+from src.models.bars import Bar1m, Indicator
 from src.services.redis_cache import RedisCache
 
 logger = logging.getLogger(__name__)
@@ -201,16 +200,20 @@ class MarketDataAgent:
             }
 
             for tf_name, resample_rule in timeframes.items():
-                df_agg = df_1m.resample(resample_rule).agg(
-                    {
-                        "open": "first",
-                        "high": "max",
-                        "low": "min",
-                        "close": "last",
-                        "volume": "sum",
-                        "vwap": "mean",
-                    }
-                ).dropna()
+                df_agg = (
+                    df_1m.resample(resample_rule)
+                    .agg(
+                        {
+                            "open": "first",
+                            "high": "max",
+                            "low": "min",
+                            "close": "last",
+                            "volume": "sum",
+                            "vwap": "mean",
+                        }
+                    )
+                    .dropna()
+                )
 
                 if len(df_agg) > 0:
                     # Cache in Redis
@@ -223,9 +226,7 @@ class MarketDataAgent:
         except Exception as e:
             logger.error(f"Error aggregating timeframes for {symbol}: {e}")
 
-    async def _calculate_indicators(
-        self, symbol: str, timeframe: str, df: pd.DataFrame
-    ) -> None:
+    async def _calculate_indicators(self, symbol: str, timeframe: str, df: pd.DataFrame) -> None:
         """
         Calculate technical indicators for given timeframe.
 
@@ -270,16 +271,30 @@ class MarketDataAgent:
             latest = df_copy.iloc[-1]
 
             indicators = {
-                "sma_20": float(latest.get("sma_20", 0)) if pd.notna(latest.get("sma_20")) else None,
-                "ema_20": float(latest.get("ema_20", 0)) if pd.notna(latest.get("ema_20")) else None,
+                "sma_20": float(latest.get("sma_20", 0))
+                if pd.notna(latest.get("sma_20"))
+                else None,
+                "ema_20": float(latest.get("ema_20", 0))
+                if pd.notna(latest.get("ema_20"))
+                else None,
                 "rsi": float(latest.get("rsi", 0)) if pd.notna(latest.get("rsi")) else None,
                 "atr": float(latest.get("atr", 0)) if pd.notna(latest.get("atr")) else None,
                 "macd": float(latest.get("macd", 0)) if pd.notna(latest.get("macd")) else None,
-                "macd_signal": float(latest.get("macd_signal", 0)) if pd.notna(latest.get("macd_signal")) else None,
-                "macd_histogram": float(latest.get("macd_histogram", 0)) if pd.notna(latest.get("macd_histogram")) else None,
-                "bb_upper": float(latest.get("bb_upper", 0)) if pd.notna(latest.get("bb_upper")) else None,
-                "bb_middle": float(latest.get("bb_middle", 0)) if pd.notna(latest.get("bb_middle")) else None,
-                "bb_lower": float(latest.get("bb_lower", 0)) if pd.notna(latest.get("bb_lower")) else None,
+                "macd_signal": float(latest.get("macd_signal", 0))
+                if pd.notna(latest.get("macd_signal"))
+                else None,
+                "macd_histogram": float(latest.get("macd_histogram", 0))
+                if pd.notna(latest.get("macd_histogram"))
+                else None,
+                "bb_upper": float(latest.get("bb_upper", 0))
+                if pd.notna(latest.get("bb_upper"))
+                else None,
+                "bb_middle": float(latest.get("bb_middle", 0))
+                if pd.notna(latest.get("bb_middle"))
+                else None,
+                "bb_lower": float(latest.get("bb_lower", 0))
+                if pd.notna(latest.get("bb_lower"))
+                else None,
             }
 
             # Cache in Redis
@@ -318,9 +333,7 @@ class MarketDataAgent:
         except Exception as e:
             logger.error(f"Failed to persist indicators for {symbol} {timeframe}: {e}")
 
-    async def get_bars(
-        self, symbol: str, timeframe: str, count: int = 100
-    ) -> pd.DataFrame:
+    async def get_bars(self, symbol: str, timeframe: str, count: int = 100) -> pd.DataFrame:
         """
         Get recent bars for symbol and timeframe.
 
@@ -348,14 +361,10 @@ class MarketDataAgent:
             return self._bars_1m[symbol].tail(count)
 
         # TODO: Fall back to database query
-        logger.warning(
-            f"No cached data for {symbol} {timeframe}, returning empty DataFrame"
-        )
+        logger.warning(f"No cached data for {symbol} {timeframe}, returning empty DataFrame")
         return pd.DataFrame()
 
-    async def get_indicators(
-        self, symbol: str, timeframes: list[str]
-    ) -> dict[str, dict]:
+    async def get_indicators(self, symbol: str, timeframes: list[str]) -> dict[str, dict]:
         """
         Get latest indicators for multiple timeframes.
 
@@ -452,10 +461,7 @@ class MarketDataAgent:
             bars = self._historical_client.get_stock_bars(request)
             df = bars.df
 
-            logger.info(
-                f"Fetched {len(df)} historical 1m bars for {symbol} "
-                f"from {start} to {end}"
-            )
+            logger.info(f"Fetched {len(df)} historical 1m bars for {symbol} from {start} to {end}")
             return df
 
         except Exception as e:

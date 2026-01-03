@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 # Import AlpacaService only if available
 try:
     from src.services.alpaca_api import AlpacaService
+
     ALPACA_AVAILABLE = True
 except ImportError:
     ALPACA_AVAILABLE = False
@@ -129,9 +130,7 @@ class ExecutionAgent:
             },
         )
 
-    async def _handle_paper_mode(
-        self, signal: Signal, position_size: Decimal
-    ) -> ExecutionResult:
+    async def _handle_paper_mode(self, signal: Signal, position_size: Decimal) -> ExecutionResult:
         """Handle PAPER_AUTO mode - execute in paper account automatically."""
         alpaca_order_id = None
 
@@ -305,7 +304,9 @@ class ExecutionAgent:
             },
         )
 
-    async def confirm_execution(self, execution_id: int, confirmed: bool, confirmed_by: str = "DISCORD") -> bool:
+    async def confirm_execution(
+        self, execution_id: int, confirmed: bool, confirmed_by: str = "DISCORD"
+    ) -> bool:
         """
         Confirm or reject a pending execution.
 
@@ -379,9 +380,7 @@ class ExecutionAgent:
             logger.error(f"Failed to get pending confirmations: {e}")
             return []
 
-    async def update_execution_status(
-        self, execution_id: int, new_status: str, **kwargs
-    ) -> bool:
+    async def update_execution_status(self, execution_id: int, new_status: str, **kwargs) -> bool:
         """
         Update execution status.
 
@@ -400,11 +399,7 @@ class ExecutionAgent:
                 update_values = {"status": new_status}
                 update_values.update(kwargs)
 
-                stmt = (
-                    update(Execution)
-                    .where(Execution.id == execution_id)
-                    .values(**update_values)
-                )
+                stmt = update(Execution).where(Execution.id == execution_id).values(**update_values)
                 result = await session.execute(stmt)
                 await session.commit()
 

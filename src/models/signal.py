@@ -27,9 +27,7 @@ class Signal(Base):
     signal_strength: Mapped[Decimal] = mapped_column(
         Numeric(5, 2), nullable=False, comment="0.0 to 100.0"
     )
-    confidence: Mapped[Decimal] = mapped_column(
-        Numeric(5, 2), nullable=False, comment="0.0 to 1.0"
-    )
+    confidence: Mapped[Decimal] = mapped_column(Numeric(5, 2), nullable=False, comment="0.0 to 1.0")
 
     # Suggested entry and exit levels
     suggested_entry: Mapped[Decimal | None] = mapped_column(Numeric(10, 4))
@@ -40,9 +38,7 @@ class Signal(Base):
     market_regime: Mapped[str | None] = mapped_column(
         String(20), comment="TRENDING, RANGING, VOLATILE"
     )
-    horizon: Mapped[str | None] = mapped_column(
-        String(10), comment="INTRADAY, SWING, BOTH"
-    )
+    horizon: Mapped[str | None] = mapped_column(String(10), comment="INTRADAY, SWING, BOTH")
 
     # Reasoning (JSON or text)
     reasoning: Mapped[str | None] = mapped_column(Text)

@@ -5,10 +5,10 @@ from decimal import Decimal
 
 import pytest
 
-from src.agents import RiskDecision, RiskManagerAgent, SettlementTrackerAgent
+from src.agents import RiskManagerAgent, SettlementTrackerAgent
 from src.core.config import TradingConfig
 from src.services import CircuitBreakerService, CircuitBreakerType
-from src.strategies import Signal, SignalDirection, TradingHorizon
+from src.strategies import Signal, SignalDirection
 
 
 class TestRiskManager:
@@ -404,9 +404,7 @@ class TestIntegration:
         assert breaker_status.can_trade is True
 
         # Check settlement status
-        settlement_status = await tracker.get_settlement_status(
-            total_cash=Decimal("10000")
-        )
+        settlement_status = await tracker.get_settlement_status(total_cash=Decimal("10000"))
         assert settlement_status.available_to_trade > 0
 
         # Evaluate trade with risk manager

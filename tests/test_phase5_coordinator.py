@@ -112,9 +112,7 @@ class TestCoordinator:
         assert decision.risk_decision["approved"] is False
 
     @pytest.mark.asyncio
-    async def test_evaluate_signal_rejected_by_circuit_breaker(
-        self, coordinator, valid_signal
-    ):
+    async def test_evaluate_signal_rejected_by_circuit_breaker(self, coordinator, valid_signal):
         """Test signal rejected by circuit breaker."""
         decision = await coordinator.evaluate_signal(
             signal=valid_signal,

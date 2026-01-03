@@ -3,14 +3,12 @@
 from datetime import datetime
 from decimal import Decimal
 
-import pandas as pd
 import pytest
 
 from src.agents import StrategyPoolAgent, StrategySelectionContext, StrategySelectorAgent
 from src.core.config import MarketRegime
 from src.strategies import (
     EMACrossoverStrategy,
-    IndicatorSet,
     Signal,
     SignalDirection,
     StrategyType,

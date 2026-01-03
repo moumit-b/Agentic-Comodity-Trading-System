@@ -44,10 +44,7 @@ class Bar1m(Base):
     trade_count: Mapped[int | None] = mapped_column(Integer)
 
     def __repr__(self) -> str:
-        return (
-            f"<Bar1m(symbol={self.symbol}, timestamp={self.timestamp}, "
-            f"close={self.close})>"
-        )
+        return f"<Bar1m(symbol={self.symbol}, timestamp={self.timestamp}, close={self.close})>"
 
 
 class BarAggregated(Base):
@@ -56,16 +53,12 @@ class BarAggregated(Base):
     __tablename__ = "bars_aggregated"
     __table_args__ = (
         Index("idx_bars_agg_symbol_tf_ts", "symbol", "timeframe", "timestamp"),
-        UniqueConstraint(
-            "symbol", "timeframe", "timestamp", name="uq_bars_agg_symbol_tf_ts"
-        ),
+        UniqueConstraint("symbol", "timeframe", "timestamp", name="uq_bars_agg_symbol_tf_ts"),
     )
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     symbol: Mapped[str] = mapped_column(String(10), nullable=False)
-    timeframe: Mapped[str] = mapped_column(
-        String(5), nullable=False
-    )  # '5m', '15m', '1h', '1d'
+    timeframe: Mapped[str] = mapped_column(String(5), nullable=False)  # '5m', '15m', '1h', '1d'
     timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     open: Mapped[Decimal] = mapped_column(Numeric(10, 4), nullable=False)
     high: Mapped[Decimal] = mapped_column(Numeric(10, 4), nullable=False)
@@ -87,9 +80,7 @@ class Indicator(Base):
     __tablename__ = "indicators"
     __table_args__ = (
         Index("idx_indicators_symbol_tf_ts", "symbol", "timeframe", "timestamp"),
-        UniqueConstraint(
-            "symbol", "timeframe", "timestamp", name="uq_indicators_symbol_tf_ts"
-        ),
+        UniqueConstraint("symbol", "timeframe", "timestamp", name="uq_indicators_symbol_tf_ts"),
     )
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)

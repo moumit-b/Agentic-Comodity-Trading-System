@@ -45,9 +45,10 @@ async def cleanup_test_data():
 
     # Clear all test data after test
     try:
+        from sqlalchemy import delete
+
         from src.core.database import get_session
         from src.models.settlement import Settlement
-        from sqlalchemy import delete
 
         async with get_session() as session:
             # Clear circuit breakers

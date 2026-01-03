@@ -83,8 +83,7 @@ class SettlementTrackerAgent:
             async with get_session() as session:
                 session.add(settlement)
             logger.info(
-                f"Recorded settlement: {trade_id} for ${cash_amount} "
-                f"(settles on {settlement_date})"
+                f"Recorded settlement: {trade_id} for ${cash_amount} (settles on {settlement_date})"
             )
             return settlement
         except Exception as e:
@@ -202,9 +201,7 @@ class SettlementTrackerAgent:
                 pending_settlements = list(result.scalars().all())
 
             # Calculate totals
-            total_pending = sum(
-                (s.cash_amount for s in pending_settlements), Decimal("0.0")
-            )
+            total_pending = sum((s.cash_amount for s in pending_settlements), Decimal("0.0"))
             total_settled = total_cash - total_pending
             available_to_trade = max(total_settled, Decimal("0.0"))
 
@@ -284,9 +281,7 @@ class SettlementTrackerAgent:
             logger.error(f"Failed to get pending settlements for {symbol}: {e}")
             return []
 
-    async def calculate_max_tradeable_amount(
-        self, total_cash: Decimal, symbol: str
-    ) -> Decimal:
+    async def calculate_max_tradeable_amount(self, total_cash: Decimal, symbol: str) -> Decimal:
         """
         Calculate maximum amount that can be traded for a symbol.
 
@@ -320,9 +315,7 @@ class SettlementTrackerAgent:
 
         return max_amount
 
-    async def get_settlement_calendar(
-        self, days_ahead: int = 7
-    ) -> dict[date, list[Settlement]]:
+    async def get_settlement_calendar(self, days_ahead: int = 7) -> dict[date, list[Settlement]]:
         """
         Get upcoming settlement calendar.
 
@@ -389,10 +382,7 @@ class SettlementTrackerAgent:
                 )
                 await session.execute(delete_stmt)
 
-            logger.info(
-                f"Cleaned up {to_delete} old settlement records "
-                f"(older than {cutoff_date})"
-            )
+            logger.info(f"Cleaned up {to_delete} old settlement records (older than {cutoff_date})")
             return to_delete
 
         except Exception as e:

@@ -2,13 +2,12 @@
 
 import logging
 from dataclasses import dataclass
-from datetime import date
 from decimal import Decimal
 
 from src.core.config import TradingConfig
 from src.core.database import get_session
 from src.models.position import Position
-from src.strategies import Signal, SignalDirection
+from src.strategies import Signal
 
 logger = logging.getLogger(__name__)
 
@@ -110,9 +109,7 @@ class RiskManagerAgent:
             )
 
         # === Check 3: Consecutive Losses ===
-        checks["consecutive_losses"] = (
-            consecutive_losses < self.config.max_consecutive_losses
-        )
+        checks["consecutive_losses"] = consecutive_losses < self.config.max_consecutive_losses
         if not checks["consecutive_losses"]:
             return RiskDecision(
                 approved=False,
@@ -169,9 +166,7 @@ class RiskManagerAgent:
 
         # === Check 6: Portfolio Heat ===
         portfolio_heat_after = portfolio_heat + risk_pct
-        checks["portfolio_heat"] = (
-            portfolio_heat_after <= self.config.max_portfolio_heat_pct
-        )
+        checks["portfolio_heat"] = portfolio_heat_after <= self.config.max_portfolio_heat_pct
         if not checks["portfolio_heat"]:
             return RiskDecision(
                 approved=False,
@@ -315,7 +310,9 @@ class RiskManagerAgent:
 
             # Calculate portfolio heat
             current_heat = total_risk / account_balance if account_balance > 0 else Decimal("0")
-            max_position_risk = max(risk_per_position.values()) if risk_per_position else Decimal("0")
+            max_position_risk = (
+                max(risk_per_position.values()) if risk_per_position else Decimal("0")
+            )
 
             logger.debug(
                 f"Portfolio heat: {current_heat:.2%} "

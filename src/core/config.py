@@ -3,7 +3,6 @@
 from decimal import Decimal
 from enum import Enum
 from functools import lru_cache
-from typing import Annotated
 
 from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -35,6 +34,7 @@ class TradingConfig(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=False,
+        extra="ignore",
     )
 
     # === Symbols & Timeframes ===
@@ -44,9 +44,7 @@ class TradingConfig(BaseSettings):
 
     # === Risk Management ===
     risk_per_trade_pct: Decimal = Field(default=Decimal("0.01"), description="1% default")
-    max_risk_per_trade_pct: Decimal = Field(
-        default=Decimal("0.02"), description="2% hard limit"
-    )
+    max_risk_per_trade_pct: Decimal = Field(default=Decimal("0.02"), description="2% hard limit")
     max_portfolio_heat_pct: Decimal = Field(
         default=Decimal("0.05"), description="5% total risk cap"
     )
@@ -103,6 +101,7 @@ class DatabaseConfig(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=False,
+        extra="ignore",
     )
 
     host: str = Field(default="localhost")
@@ -145,6 +144,7 @@ class RedisConfig(BaseSettings):
         env_prefix="REDIS_",
         env_file=".env",
         env_file_encoding="utf-8",
+        extra="ignore",
         case_sensitive=False,
     )
 
@@ -180,11 +180,10 @@ class AlpacaConfig(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=False,
+        extra="ignore",
     )
 
-    api_key: SecretStr = Field(
-        default=SecretStr(""), description="Alpaca API key (paper or live)"
-    )
+    api_key: SecretStr = Field(default=SecretStr(""), description="Alpaca API key (paper or live)")
     api_secret: SecretStr = Field(default=SecretStr(""), description="Alpaca API secret")
     base_url: str = Field(
         default="https://paper-api.alpaca.markets",
@@ -231,6 +230,7 @@ class DiscordConfig(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=False,
+        extra="ignore",
     )
 
     bot_token: SecretStr = Field(default=SecretStr(""), description="Discord bot token")
@@ -256,13 +256,12 @@ class AWSConfig(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=False,
+        extra="ignore",
     )
 
     region: str = Field(default="us-east-1")
     access_key_id: SecretStr = Field(default=SecretStr(""), description="AWS access key")
-    secret_access_key: SecretStr = Field(
-        default=SecretStr(""), description="AWS secret key"
-    )
+    secret_access_key: SecretStr = Field(default=SecretStr(""), description="AWS secret key")
 
     # RDS settings (overrides DatabaseConfig when deployed)
     rds_endpoint: str | None = Field(default=None, description="RDS instance endpoint")

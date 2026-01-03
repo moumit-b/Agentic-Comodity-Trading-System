@@ -2,7 +2,6 @@
 
 import logging
 from dataclasses import dataclass
-from datetime import datetime
 from decimal import Decimal
 
 from src.agents.execution_agent import ExecutionAgent, ExecutionDecision
@@ -11,7 +10,6 @@ from src.agents.settlement_tracker import SettlementTrackerAgent
 from src.agents.strategy_pool import StrategyPoolAgent
 from src.agents.strategy_selector import StrategySelectorAgent
 from src.core.config import TradingConfig
-from src.services.alpaca_api import AlpacaService
 from src.services.circuit_breakers import CircuitBreakerService
 from src.services.discord_notifier import DiscordNotifier
 from src.strategies import Signal
@@ -239,8 +237,7 @@ class CoordinatorAgent:
             # Notify about rejection
             if self.notifier:
                 failed_checks = [
-                    check for check, passed in risk_decision.passed_checks.items()
-                    if not passed
+                    check for check, passed in risk_decision.passed_checks.items() if not passed
                 ]
                 await self.notifier.notify_risk_rejection(
                     symbol=signal.symbol,
@@ -315,12 +312,15 @@ class CoordinatorAgent:
 
         # === Return Decision ===
         return TradeDecision(
-            approved=execution_result.decision in [
+            approved=execution_result.decision
+            in [
                 ExecutionDecision.EXECUTE,
                 ExecutionDecision.REQUEST_CONFIRMATION,
             ],
             signal=signal,
-            rejection_reason="" if execution_result.decision == ExecutionDecision.EXECUTE else execution_result.message,
+            rejection_reason=""
+            if execution_result.decision == ExecutionDecision.EXECUTE
+            else execution_result.message,
             execution_result={
                 "decision": execution_result.decision.value,
                 "order_id": execution_result.order_id,

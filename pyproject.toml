@@ -35,8 +35,9 @@ dependencies = [
     "redis>=5.0.0",
 
     # Dashboard
-    "streamlit>=1.29.0",
+    "streamlit>=1.37.0",
     "plotly>=5.18.0",
+    "streamlit-autorefresh>=1.0.0",
 
     # Notifications
     "discord.py>=2.3.0",

@@ -107,9 +107,7 @@ class CircuitBreakerService:
             reasons.append(
                 f"Daily loss limit hit ({daily_pnl_pct:.2%} <= -{self.daily_loss_limit_pct:.2%})"
             )
-            await self._trip_breaker(
-                CircuitBreakerType.DAILY_LOSS_LIMIT, reasons[-1]
-            )
+            await self._trip_breaker(CircuitBreakerType.DAILY_LOSS_LIMIT, reasons[-1])
 
         # === 2. Daily Profit Target ===
         if daily_pnl_pct >= self.daily_profit_target_pct:
@@ -117,9 +115,7 @@ class CircuitBreakerService:
             reasons.append(
                 f"Daily profit target hit ({daily_pnl_pct:.2%} >= {self.daily_profit_target_pct:.2%})"
             )
-            await self._trip_breaker(
-                CircuitBreakerType.DAILY_PROFIT_TARGET, reasons[-1]
-            )
+            await self._trip_breaker(CircuitBreakerType.DAILY_PROFIT_TARGET, reasons[-1])
 
         # === 3. Consecutive Losses ===
         if consecutive_losses >= self.max_consecutive_losses:
@@ -127,9 +123,7 @@ class CircuitBreakerService:
             reasons.append(
                 f"Max consecutive losses ({consecutive_losses} >= {self.max_consecutive_losses})"
             )
-            await self._trip_breaker(
-                CircuitBreakerType.CONSECUTIVE_LOSSES, reasons[-1]
-            )
+            await self._trip_breaker(CircuitBreakerType.CONSECUTIVE_LOSSES, reasons[-1])
 
         # === 4. Portfolio Heat ===
         if portfolio_heat >= self.max_portfolio_heat_pct:
@@ -137,9 +131,7 @@ class CircuitBreakerService:
             reasons.append(
                 f"Portfolio heat too high ({portfolio_heat:.2%} >= {self.max_portfolio_heat_pct:.2%})"
             )
-            await self._trip_breaker(
-                CircuitBreakerType.PORTFOLIO_HEAT, reasons[-1]
-            )
+            await self._trip_breaker(CircuitBreakerType.PORTFOLIO_HEAT, reasons[-1])
 
         # === 5. Volatility Spike ===
         if (
@@ -147,17 +139,11 @@ class CircuitBreakerService:
             and baseline_volatility is not None
             and baseline_volatility > 0
         ):
-            volatility_increase = (
-                current_volatility - baseline_volatility
-            ) / baseline_volatility
+            volatility_increase = (current_volatility - baseline_volatility) / baseline_volatility
             if volatility_increase >= self.max_volatility_spike_pct:
                 active_breakers.append(CircuitBreakerType.VOLATILITY_SPIKE)
-                reasons.append(
-                    f"Volatility spike ({volatility_increase:.2%} increase)"
-                )
-                await self._trip_breaker(
-                    CircuitBreakerType.VOLATILITY_SPIKE, reasons[-1]
-                )
+                reasons.append(f"Volatility spike ({volatility_increase:.2%} increase)")
+                await self._trip_breaker(CircuitBreakerType.VOLATILITY_SPIKE, reasons[-1])
 
         # === 6. Stale Data ===
         if last_data_update is not None:
@@ -167,9 +153,7 @@ class CircuitBreakerService:
                 reasons.append(
                     f"Stale data ({age_minutes:.1f} min old, threshold={self.stale_data_threshold_minutes} min)"
                 )
-                await self._trip_breaker(
-                    CircuitBreakerType.STALE_DATA, reasons[-1]
-                )
+                await self._trip_breaker(CircuitBreakerType.STALE_DATA, reasons[-1])
 
         # === 7. Manual Kill Switch ===
         if await self._is_kill_switch_active():
@@ -181,9 +165,7 @@ class CircuitBreakerService:
         can_trade = not is_tripped
 
         if is_tripped:
-            logger.warning(
-                f"Circuit breakers tripped: {[b.value for b in active_breakers]}"
-            )
+            logger.warning(f"Circuit breakers tripped: {[b.value for b in active_breakers]}")
         else:
             logger.debug("All circuit breakers clear")
 
@@ -194,9 +176,7 @@ class CircuitBreakerService:
             can_trade=can_trade,
         )
 
-    async def _trip_breaker(
-        self, breaker_type: CircuitBreakerType, reason: str
-    ) -> None:
+    async def _trip_breaker(self, breaker_type: CircuitBreakerType, reason: str) -> None:
         """
         Record a circuit breaker trip in the database.
 
@@ -238,8 +218,7 @@ class CircuitBreakerService:
                 from sqlalchemy import select
 
                 stmt = select(CircuitBreaker).where(
-                    CircuitBreaker.breaker_type
-                    == CircuitBreakerType.MANUAL_KILL_SWITCH.value,
+                    CircuitBreaker.breaker_type == CircuitBreakerType.MANUAL_KILL_SWITCH.value,
                     CircuitBreaker.is_active == True,
                 )
                 result = await session.execute(stmt)
@@ -265,8 +244,7 @@ class CircuitBreakerService:
                 stmt = (
                     update(CircuitBreaker)
                     .where(
-                        CircuitBreaker.breaker_type
-                        == CircuitBreakerType.MANUAL_KILL_SWITCH.value,
+                        CircuitBreaker.breaker_type == CircuitBreakerType.MANUAL_KILL_SWITCH.value,
                         CircuitBreaker.is_active == True,
                     )
                     .values(is_active=False, cleared_at=datetime.now())

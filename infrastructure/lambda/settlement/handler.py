@@ -122,7 +122,7 @@ def lambda_handler(event, context):
 
         # Cleanup old records (older than 90 days)
         logger.info("Cleaning up old settlement records...")
-        cleanup_result = asyncio.run(settlement_tracker.cleanup_old_settlements(days=90))
+        cleanup_result = asyncio.run(settlement_tracker.cleanup_old_settlements(90))
 
         # Log summary
         end_time = datetime.utcnow()

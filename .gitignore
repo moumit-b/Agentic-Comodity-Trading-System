@@ -50,3 +50,7 @@ logs/
 #personal docs
 COST_TRACKING.md
 AWS_DEPLOYMENT_GUIDE.md
+
+# Terraform variable files
+infrastructure/terraform/terraform.tfvars
+infrastructure/terraform/*.tfvars

@@ -1,6 +1,7 @@
 """Main Streamlit dashboard application."""
 
 import streamlit as st
+from streamlit_autorefresh import st_autorefresh
 
 from dashboard.components.circuit_breakers import render_circuit_breakers
 from dashboard.components.header import render_header
@@ -26,6 +27,10 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
 )
+
+# Trigger rerun every 30 seconds to keep fragments active
+# Fragments will update every 5s independently
+st_autorefresh(interval=30000, key="fragment_heartbeat")
 
 # Main title
 st.title(f"{PAGE_ICON} {DASHBOARD_TITLE}")

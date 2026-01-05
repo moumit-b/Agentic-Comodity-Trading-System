@@ -101,13 +101,13 @@ def render_header():
 
         mode = config.automation_mode
         mode_colors = {
-            "ADVISORY": COLORS["neutral"],
-            "PAPER_AUTO": COLORS["warning"],
-            "LIVE_CONFIRM": COLORS["warning"],
-            "LIVE_AUTO": COLORS["critical"],
+            "ADVISORY": "gray",
+            "PAPER_AUTO": "orange",
+            "LIVE_CONFIRM": "orange",
+            "LIVE_AUTO": "red",
         }
 
-        mode_color = mode_colors.get(mode.value, COLORS["neutral"])
+        mode_color = mode_colors.get(mode.value, "gray")
         st.markdown(f"**:{mode_color}[{mode.value}]**")
 
     # Column 4: Account Balance

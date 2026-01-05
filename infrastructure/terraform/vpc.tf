@@ -144,6 +144,15 @@ resource "aws_security_group" "dashboard" {
     }
   }
 
+  # SSH from EC2 Instance Connect (us-east-1)
+  ingress {
+    description = "SSH from EC2 Instance Connect"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["18.206.107.24/29"] # EC2 Instance Connect us-east-1
+  }
+
   # All outbound traffic
   egress {
     description = "All outbound"

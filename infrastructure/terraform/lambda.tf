@@ -95,29 +95,30 @@ resource "aws_cloudwatch_log_group" "settlement" {
 # NOTE: This assumes you've built a layer zip with all dependencies
 # Build with: cd infrastructure/lambda && pip install -r requirements.txt -t python/lib/python3.11/site-packages/
 resource "aws_lambda_layer_version" "dependencies" {
-  filename            = "${path.module}/../lambda/layer.zip"
+  s3_bucket           = aws_s3_bucket.lambda_artifacts.id
+  s3_key              = aws_s3_object.lambda_layer.key
   layer_name          = "${var.project_name}-dependencies"
   compatible_runtimes = [var.lambda_runtime]
-  source_code_hash    = fileexists("${path.module}/../lambda/layer.zip") ? filebase64sha256("${path.module}/../lambda/layer.zip") : null
 
   description = "Trading system dependencies (SQLAlchemy, Redis, Alpaca SDK, etc.)"
 
   lifecycle {
     create_before_destroy = true
   }
+
+  depends_on = [aws_s3_object.lambda_layer]
 }
 
 # Trading Loop Lambda Function
 resource "aws_lambda_function" "trading_loop" {
-  filename      = "${path.module}/../lambda/trading_loop.zip"
+  s3_bucket     = aws_s3_bucket.lambda_artifacts.id
+  s3_key        = aws_s3_object.trading_loop_function.key
   function_name = "${var.project_name}-trading-loop"
   role          = aws_iam_role.lambda.arn
   handler       = "handler.lambda_handler"
   runtime       = var.lambda_runtime
   timeout       = var.lambda_trading_loop_timeout
   memory_size   = var.lambda_trading_loop_memory
-
-  source_code_hash = fileexists("${path.module}/../lambda/trading_loop.zip") ? filebase64sha256("${path.module}/../lambda/trading_loop.zip") : null
 
   layers = [aws_lambda_layer_version.dependencies.arn]
 
@@ -152,15 +153,14 @@ resource "aws_lambda_function" "trading_loop" {
 
 # Settlement Lambda Function
 resource "aws_lambda_function" "settlement" {
-  filename      = "${path.module}/../lambda/settlement.zip"
+  s3_bucket     = aws_s3_bucket.lambda_artifacts.id
+  s3_key        = aws_s3_object.settlement_function.key
   function_name = "${var.project_name}-settlement"
   role          = aws_iam_role.lambda.arn
   handler       = "handler.lambda_handler"
   runtime       = var.lambda_runtime
   timeout       = var.lambda_settlement_timeout
   memory_size   = var.lambda_settlement_memory
-
-  source_code_hash = fileexists("${path.module}/../lambda/settlement.zip") ? filebase64sha256("${path.module}/../lambda/settlement.zip") : null
 
   layers = [aws_lambda_layer_version.dependencies.arn]
 

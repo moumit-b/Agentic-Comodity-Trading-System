@@ -24,11 +24,13 @@ resource "aws_db_parameter_group" "main" {
   parameter {
     name  = "max_connections"
     value = "100"
+    apply_method = "pending-reboot"  # Static parameter
   }
 
   parameter {
     name  = "shared_buffers"
     value = "{DBInstanceClassMemory/32768}" # 25% of available memory
+    apply_method = "pending-reboot"  # Static parameter
   }
 
   parameter {

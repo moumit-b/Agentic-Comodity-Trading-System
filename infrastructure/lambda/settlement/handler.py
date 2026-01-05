@@ -48,7 +48,7 @@ def lambda_handler(event, context):
     start_time = datetime.utcnow()
     logger.info("=" * 80)
     logger.info(f"Settlement processing started at {start_time.isoformat()}Z")
-    logger.info(f"Request ID: {context.request_id}")
+    logger.info(f"Request ID: {context.aws_request_id}")
     logger.info(f"Event: {json.dumps(event)}")
 
     try:
@@ -146,7 +146,7 @@ def lambda_handler(event, context):
             "body": json.dumps(
                 {
                     "message": "Settlement processing completed successfully",
-                    "request_id": context.request_id,
+                    "request_id": context.aws_request_id,
                     "start_time": start_time.isoformat(),
                     "end_time": end_time.isoformat(),
                     "duration_seconds": duration,
@@ -167,7 +167,7 @@ def lambda_handler(event, context):
             "body": json.dumps(
                 {
                     "message": "Settlement processing failed",
-                    "request_id": context.request_id,
+                    "request_id": context.aws_request_id,
                     "start_time": start_time.isoformat(),
                     "end_time": end_time.isoformat(),
                     "duration_seconds": duration,

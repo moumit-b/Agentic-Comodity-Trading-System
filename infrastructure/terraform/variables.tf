@@ -61,7 +61,7 @@ variable "rds_allocated_storage" {
 variable "rds_engine_version" {
   description = "PostgreSQL engine version"
   type        = string
-  default     = "16.1"
+  default     = "16"
 }
 
 variable "rds_database_name" {
@@ -173,7 +173,7 @@ variable "ec2_ami_name_filter" {
 variable "ec2_volume_size" {
   description = "Root volume size for EC2 instance (GB)"
   type        = number
-  default     = 20
+  default     = 30
 }
 
 variable "dashboard_port" {

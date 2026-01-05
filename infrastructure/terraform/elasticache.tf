@@ -26,12 +26,6 @@ resource "aws_elasticache_parameter_group" "main" {
     value = "allkeys-lru" # Evict least recently used keys when memory is full
   }
 
-  # Persistence (RDB snapshots)
-  parameter {
-    name  = "save"
-    value = "900 1 300 10 60 10000" # Save after 900s if 1 key changed, etc.
-  }
-
   # Timeout
   parameter {
     name  = "timeout"

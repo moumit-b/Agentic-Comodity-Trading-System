@@ -7,7 +7,6 @@ from datetime import timedelta
 import streamlit as st
 from sqlalchemy import text
 
-from dashboard.config import COLORS
 from dashboard.utils.data_loader import load_account_status
 from dashboard.utils.formatters import format_currency, format_timestamp
 from src.core.config import RedisConfig, TradingConfig

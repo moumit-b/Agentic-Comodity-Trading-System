@@ -142,26 +142,185 @@ class CoordinatorAgent:
 
         logger.info("✓ Circuit breakers clear")
 
-        # === STEP 2: Strategy Selection & Signal Generation ===
-        # This would normally use real market data
-        # For now, we'll check if any strategies should run
-        logger.info("Checking strategy selection...")
+        # === STEP 2: Extract Market Data ===
+        try:
+            import pandas as pd
+            import pandas_ta as ta
 
-        # TODO: Implement actual strategy execution with market data
-        # signals = await self.strategy_pool.execute_all_strategies(...)
+            from src.strategies import IndicatorSet
 
-        # For now, return no signal (would be generated in real implementation)
-        logger.info("No signals generated in this cycle")
+            symbol = market_data.get("symbol", "USO")
+            bars_dict = market_data.get("bars", {})
 
-        return TradeDecision(
-            approved=False,
-            signal=None,
-            rejection_reason="No signals generated",
-            execution_result=None,
-            risk_decision=None,
-            breaker_status=None,
-            settlement_status=None,
-        )
+            # Convert Alpaca bars to DataFrame
+            if not bars_dict or symbol not in bars_dict:
+                logger.warning(f"No bar data available for {symbol}")
+                return TradeDecision(
+                    approved=False,
+                    signal=None,
+                    rejection_reason="No market data available",
+                    execution_result=None,
+                    risk_decision=None,
+                    breaker_status=None,
+                    settlement_status=None,
+                )
+
+            bars_list = bars_dict[symbol]
+            if not bars_list:
+                logger.warning(f"Empty bars list for {symbol}")
+                return TradeDecision(
+                    approved=False,
+                    signal=None,
+                    rejection_reason="Empty market data",
+                    execution_result=None,
+                    risk_decision=None,
+                    breaker_status=None,
+                    settlement_status=None,
+                )
+
+            # Convert to DataFrame
+            bars_data = []
+            for bar in bars_list:
+                bars_data.append(
+                    {
+                        "timestamp": bar.timestamp,
+                        "open": float(bar.open),
+                        "high": float(bar.high),
+                        "low": float(bar.low),
+                        "close": float(bar.close),
+                        "volume": int(bar.volume),
+                    }
+                )
+
+            bars = pd.DataFrame(bars_data)
+            bars.set_index("timestamp", inplace=True)
+
+            logger.info(f"Processing {len(bars)} bars for {symbol}")
+
+            # === STEP 3: Calculate Indicators ===
+            if len(bars) < 50:
+                logger.warning(f"Insufficient bars ({len(bars)}) for analysis, need at least 50")
+                return TradeDecision(
+                    approved=False,
+                    signal=None,
+                    rejection_reason="Insufficient market data (need 50+ bars)",
+                    execution_result=None,
+                    risk_decision=None,
+                    breaker_status=None,
+                    settlement_status=None,
+                )
+
+            # Calculate indicators for 1h timeframe (simplified)
+            bars_copy = bars.copy()
+
+            # Calculate technical indicators
+            bars_copy["sma_20"] = ta.sma(bars_copy["close"], length=20)
+            bars_copy["ema_20"] = ta.ema(bars_copy["close"], length=20)
+            bars_copy["rsi"] = ta.rsi(bars_copy["close"], length=14)
+
+            atr = ta.atr(bars_copy["high"], bars_copy["low"], bars_copy["close"], length=14)
+            bars_copy["atr"] = atr
+
+            macd = ta.macd(bars_copy["close"], fast=12, slow=26, signal=9)
+            if macd is not None:
+                bars_copy["macd"] = macd["MACD_12_26_9"]
+                bars_copy["macd_signal"] = macd["MACDs_12_26_9"]
+                bars_copy["macd_histogram"] = macd["MACDh_12_26_9"]
+
+            bbands = ta.bbands(bars_copy["close"], length=20, std=2)
+            if bbands is not None:
+                bars_copy["bb_upper"] = bbands["BBU_20_2.0"]
+                bars_copy["bb_middle"] = bbands["BBM_20_2.0"]
+                bars_copy["bb_lower"] = bbands["BBL_20_2.0"]
+
+            # Get latest values
+            latest = bars_copy.iloc[-1]
+
+            indicators_1h = IndicatorSet(
+                sma_20=float(latest["sma_20"]) if pd.notna(latest["sma_20"]) else None,
+                ema_20=float(latest["ema_20"]) if pd.notna(latest["ema_20"]) else None,
+                rsi=float(latest["rsi"]) if pd.notna(latest["rsi"]) else None,
+                atr=float(latest["atr"]) if pd.notna(latest["atr"]) else None,
+                macd=float(latest.get("macd", 0)) if pd.notna(latest.get("macd")) else None,
+                macd_signal=float(latest.get("macd_signal", 0))
+                if pd.notna(latest.get("macd_signal"))
+                else None,
+                macd_histogram=float(latest.get("macd_histogram", 0))
+                if pd.notna(latest.get("macd_histogram"))
+                else None,
+                bb_upper=float(latest.get("bb_upper", 0))
+                if pd.notna(latest.get("bb_upper"))
+                else None,
+                bb_middle=float(latest.get("bb_middle", 0))
+                if pd.notna(latest.get("bb_middle"))
+                else None,
+                bb_lower=float(latest.get("bb_lower", 0))
+                if pd.notna(latest.get("bb_lower"))
+                else None,
+            )
+
+            indicators = {"1h": indicators_1h}
+
+            logger.info(
+                f"Indicators: RSI={indicators_1h.rsi:.1f}, "
+                f"SMA20={indicators_1h.sma_20:.2f}, ATR={indicators_1h.atr:.3f}"
+            )
+
+            # === STEP 4: Detect Market Regime ===
+            market_regime = self.strategy_selector.detect_market_regime(bars, indicators)
+            logger.info(f"Market regime: {market_regime.value}")
+
+            # === STEP 5: Execute Strategies ===
+            logger.info("Executing strategies...")
+            signals = self.strategy_pool.execute_all_strategies(
+                symbol=symbol, bars=bars, indicators=indicators, market_regime=market_regime
+            )
+
+            if not signals:
+                logger.info("No signals generated by strategies")
+                return TradeDecision(
+                    approved=False,
+                    signal=None,
+                    rejection_reason="No signals generated",
+                    execution_result=None,
+                    risk_decision=None,
+                    breaker_status=None,
+                    settlement_status=None,
+                )
+
+            logger.info(f"Generated {len(signals)} signal(s)")
+
+            # === STEP 6: Rank and Select Best Signal ===
+            ranked_signals = self.strategy_pool.rank_signals(signals)
+            best_signal = ranked_signals[0]
+
+            logger.info(
+                f"Best signal: {best_signal.strategy_name} - {best_signal.direction.value} "
+                f"(strength={best_signal.signal_strength}, confidence={best_signal.confidence})"
+            )
+
+            # === STEP 7: Evaluate Signal Through Risk Pipeline ===
+            trade_decision = await self.evaluate_signal(
+                signal=best_signal,
+                account_balance=account_balance,
+                current_positions=current_positions,
+                daily_trades_count=daily_trades_count,
+                consecutive_losses=consecutive_losses,
+            )
+
+            return trade_decision
+
+        except Exception as e:
+            logger.error(f"Error in trading cycle: {e}", exc_info=True)
+            return TradeDecision(
+                approved=False,
+                signal=None,
+                rejection_reason=f"Trading cycle error: {str(e)}",
+                execution_result=None,
+                risk_decision=None,
+                breaker_status=None,
+                settlement_status=None,
+            )
 
     async def evaluate_signal(
         self,

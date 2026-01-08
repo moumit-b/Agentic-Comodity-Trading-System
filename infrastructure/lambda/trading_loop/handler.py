@@ -90,19 +90,91 @@ def lambda_handler(event, context):
         logger.info("Secrets loaded successfully")
 
         # Import application modules (after environment is set)
+        from decimal import Decimal
+
         from src.agents.coordinator import CoordinatorAgent
-        from src.core.config import TradingConfig
+        from src.agents.execution_agent import ExecutionAgent
+        from src.agents.risk_manager import RiskManagerAgent
+        from src.agents.settlement_tracker import SettlementTrackerAgent
+        from src.agents.strategy_pool import StrategyPoolAgent
+        from src.agents.strategy_selector import StrategySelectorAgent
+        from src.core.config import DatabaseConfig, TradingConfig
+        from src.core.database import init_db
+        from src.services.alpaca_api import AlpacaService
+        from src.services.circuit_breakers import CircuitBreakerService
 
         # Initialize configuration
         config = TradingConfig()
         logger.info(f"Configuration loaded: automation_mode={config.automation_mode.value}")
 
-        # Run trading cycle
+        # Initialize database
+        logger.info("Initializing database...")
+        db_config = DatabaseConfig()
+        init_db(db_config)
+
+        # Initialize services
+        logger.info("Initializing services...")
+        alpaca_service = AlpacaService(config.alpaca, paper_mode=config.alpaca.paper_trading)
+        circuit_breakers = CircuitBreakerService()
+
+        # Initialize agents
+        logger.info("Initializing agents...")
+        strategy_selector = StrategySelectorAgent(config)
+        strategy_pool = StrategyPoolAgent()
+        risk_manager = RiskManagerAgent(config)
+        settlement_tracker = SettlementTrackerAgent()
+        execution_agent = ExecutionAgent(config, mode=config.automation_mode)
+
+        # Initialize coordinator
         logger.info("Initializing coordinator agent...")
-        coordinator = CoordinatorAgent(config)
+        coordinator = CoordinatorAgent(
+            config=config,
+            strategy_selector=strategy_selector,
+            strategy_pool=strategy_pool,
+            risk_manager=risk_manager,
+            settlement_tracker=settlement_tracker,
+            circuit_breakers=circuit_breakers,
+            execution_agent=execution_agent,
+            notifier=None,  # Discord notifications optional in Lambda
+        )
+
+        # Fetch account information
+        logger.info("Fetching account information...")
+        account = alpaca_service.get_account()
+        account_balance = Decimal(str(account.cash))
+        logger.info(f"Account balance: ${account_balance:.2f}")
+
+        # Fetch current positions
+        positions = alpaca_service.get_all_positions()
+        current_positions = len(positions)
+        logger.info(f"Current positions: {current_positions}")
+
+        # Fetch market data for USO (primary symbol)
+        # TODO: Make symbol configurable
+        symbol = "USO"
+        logger.info(f"Fetching market data for {symbol}...")
+        bars = alpaca_service.get_latest_bars([symbol])
+        market_data = {
+            "symbol": symbol,
+            "bars": bars,
+            # Additional data would be fetched here (indicators, etc.)
+        }
+
+        # Get daily trades count and consecutive losses from circuit breakers
+        # For now, use placeholder values (would be fetched from database in production)
+        daily_trades_count = 0  # TODO: Query from database
+        consecutive_losses = 0  # TODO: Query from database or circuit breaker state
 
         logger.info("Running trading cycle...")
-        result = asyncio.run(coordinator.run_trading_cycle())
+        result = asyncio.run(
+            coordinator.run_trading_cycle(
+                market_data=market_data,
+                account_balance=account_balance,
+                current_positions=current_positions,
+                daily_trades_count=daily_trades_count,
+                consecutive_losses=consecutive_losses,
+            )
+        )
 
         # Log results
         end_time = datetime.utcnow()

@@ -1,0 +1,12 @@
+FROM public.ecr.aws/lambda/python:3.11
+RUN yum install -y gcc gcc-c++ make cmake zip unzip postgresql-devel && yum clean all
+COPY trading_loop/requirements.txt /tmp/requirements.txt
+WORKDIR /tmp
+RUN mkdir -p python
+RUN pip install --only-binary :all: --target python --upgrade -r requirements.txt --no-cache-dir || \
+    pip install --target python --upgrade -r requirements.txt --no-cache-dir
+RUN cd python && find . -type d -name "tests" -exec rm -rf {} + 2>/dev/null || true
+RUN cd python && find . -name "*.pyc" -delete
+RUN cd python && find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+RUN cd /tmp && zip -r layer.zip python
+CMD ["bash"]

@@ -92,33 +92,42 @@ def lambda_handler(event, context):
 
         # Import application modules (after environment is set)
         from src.agents.settlement_tracker import SettlementTrackerAgent
-        from src.core.config import TradingConfig
+        from src.core.config import DatabaseConfig, TradingConfig
+        from src.core.database import init_db
 
         # Initialize configuration
         config = TradingConfig()
         logger.info("Configuration loaded")
 
+        # Initialize database
+        logger.info("Initializing database...")
+        db_config = DatabaseConfig()
+        init_db(db_config)
+
         # Initialize settlement tracker
         logger.info("Initializing settlement tracker agent...")
-        settlement_tracker = SettlementTrackerAgent(config)
+        settlement_tracker = SettlementTrackerAgent()  # Takes no arguments
 
         # Process settlement
         logger.info("Processing settlement for today...")
-        settlement_result = asyncio.run(settlement_tracker.process_settlement())
+        settlement_result = asyncio.run(settlement_tracker.process_due_settlements())
 
         # Get pending settlements
         logger.info("Retrieving pending settlements...")
-        pending = asyncio.run(settlement_tracker.get_pending_settlements())
-
-        # Get available cash
-        logger.info("Calculating available cash...")
+        # get_settlement_status requires total_cash, so we need to fetch it from Alpaca
         from src.services.alpaca_api import AlpacaService
 
-        alpaca_service = AlpacaService(config.alpaca)
+        alpaca_service = AlpacaService(config.alpaca, paper_mode=config.alpaca.paper_trading)
         account_info = alpaca_service.get_account()
-        available_cash = asyncio.run(
-            settlement_tracker.get_available_cash(float(account_info.cash))
-        )
+        from decimal import Decimal
+
+        total_cash = Decimal(str(account_info.cash))
+        settlement_status = asyncio.run(settlement_tracker.get_settlement_status(total_cash))
+        pending = settlement_status.pending_settlements
+
+        # Available cash is already calculated in settlement_status
+        logger.info("Calculating available cash...")
+        available_cash = settlement_status.available_to_trade
 
         # Cleanup old records (older than 90 days)
         logger.info("Cleaning up old settlement records...")

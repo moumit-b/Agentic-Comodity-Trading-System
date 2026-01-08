@@ -4,7 +4,7 @@ from datetime import timedelta
 
 import streamlit as st
 
-from dashboard.config import COLORS, MAX_SIGNAL_DISPLAY
+from dashboard.config import MAX_SIGNAL_DISPLAY
 from dashboard.utils.data_loader import load_decisions, load_signals
 from dashboard.utils.formatters import (
     format_confidence,
@@ -197,6 +197,8 @@ def render_signal_feed():
                                 f"Risk: {format_currency(decision['risk_amount'])} ({decision['risk_pct']:.2%})"
                             )
                         else:
-                            st.error(f"✗ Rejected: {shorten_text(decision['rejection_reason'], 100)}")
+                            st.error(
+                                f"✗ Rejected: {shorten_text(decision['rejection_reason'], 100)}"
+                            )
 
                 st.divider()

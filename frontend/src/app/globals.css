@@ -1,0 +1,188 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: 'Azeret Mono';
+  src: url('/fonts/Azeret_Mono/static/AzeretMono-Light.ttf') format('truetype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Azeret Mono';
+  src: url('/fonts/Azeret_Mono/static/AzeretMono-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Azeret Mono';
+  src: url('/fonts/Azeret_Mono/static/AzeretMono-Medium.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@layer base {
+  * {
+    @apply border-terminal-border;
+  }
+
+  body {
+    @apply text-terminal-text-primary;
+    background: #000000;
+    position: relative;
+  }
+
+  body::before,
+  body::after {
+    content: '';
+    position: fixed;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 0;
+    filter: blur(140px);
+  }
+
+  body::before {
+    width: 700px;
+    height: 900px;
+    top: 10%;
+    left: -15%;
+    background: radial-gradient(ellipse, rgba(194, 244, 255, 0.18) 0%, transparent 65%);
+    transform: rotate(-35deg) scale(1.2, 0.8);
+  }
+
+  body::after {
+    width: 800px;
+    height: 650px;
+    bottom: 15%;
+    right: -10%;
+    background: radial-gradient(circle, rgba(198, 192, 255, 0.15) 0%, rgba(177, 255, 194, 0.08) 35%, transparent 70%);
+    transform: rotate(52deg) scale(0.9, 1.1);
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-terminal-bg;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-terminal-border rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-accent-purple/50;
+  }
+
+  ::selection {
+    @apply bg-accent-purple/30 text-white;
+  }
+}
+
+@layer components {
+  /* Professional card styling with larger radius and subtle border */
+  .glass-card {
+    @apply relative overflow-hidden rounded-xl;
+    background: linear-gradient(145deg, #1a1a1a 0%, #151515 100%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 
+      0 4px 16px rgba(0, 0, 0, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  }
+
+  .glass-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.1) 50%, transparent 100%);
+    pointer-events: none;
+  }
+
+  /* Enhanced depth card with stronger gradient for main containers */
+  .glass-card-depth {
+    @apply relative overflow-hidden rounded-xl;
+    background: 
+      linear-gradient(145deg, #1c1c1c 0%, #141414 50%, #0f0f0f 100%),
+      radial-gradient(ellipse at top left, rgba(194, 244, 255, 0.03), transparent 50%);
+    background-blend-mode: normal, screen;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 
+      0 8px 32px rgba(0, 0, 0, 0.6),
+      0 2px 8px rgba(0, 0, 0, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+
+  /* Subtle ambient glow for important containers */
+  .ambient-glow {
+    position: relative;
+  }
+
+  .ambient-glow::after {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, 
+      rgba(194, 244, 255, 0.08) 0%, 
+      rgba(198, 192, 255, 0.06) 50%, 
+      transparent 100%);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  /* Vignette overlay for dashboard sections */
+  .section-vignette {
+    position: relative;
+  }
+
+  .section-vignette::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center, transparent 20%, rgba(0, 0, 0, 0.4) 100%);
+    pointer-events: none;
+    border-radius: inherit;
+  }
+
+  /* Noise texture overlay for cards */
+  .card-noise {
+    position: relative;
+  }
+
+  .card-noise::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='2.5' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.015'/%3E%3C/svg%3E");
+    pointer-events: none;
+    opacity: 0.3;
+    mix-blend-mode: overlay;
+    border-radius: inherit;
+  }
+
+  /* Subtle panel with lighter gradient */
+  .glass-panel {
+    @apply relative overflow-hidden rounded-lg;
+    background: linear-gradient(135deg, #222222 0%, #1a1a1a 100%);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  /* Tabular numerals for professional number display */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+}

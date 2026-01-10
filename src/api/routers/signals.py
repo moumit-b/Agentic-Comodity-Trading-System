@@ -2,9 +2,12 @@
 
 import logging
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from sqlalchemy import select
 
+from src.api.auth import verify_api_key
 from src.api.schemas.responses import DecisionResponse, SignalResponse
 from src.core.database import get_session
 from src.models.execution import Decision
@@ -13,13 +16,17 @@ from src.models.signal import Signal
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+limiter = Limiter(key_func=get_remote_address)
 
 
 @router.get("/signals", response_model=list[SignalResponse])
+@limiter.limit("60/minute")
 async def get_signals(
+    request: Request,
     limit: int = Query(50, ge=1, le=1000, description="Number of signals to return"),
     strategy: str | None = Query(None, description="Filter by strategy name"),
     direction: str | None = Query(None, description="Filter by direction (LONG/SHORT)"),
+    _api_key: str = Depends(verify_api_key),
 ):
     """Get recent trading signals."""
     try:
@@ -67,8 +74,11 @@ async def get_signals(
 
 
 @router.get("/decisions", response_model=list[DecisionResponse])
+@limiter.limit("60/minute")
 async def get_decisions(
+    request: Request,
     limit: int = Query(100, ge=1, le=1000, description="Number of decisions to return"),
+    _api_key: str = Depends(verify_api_key),
 ):
     """Get recent decisions."""
     try:

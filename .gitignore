@@ -1,20 +1,82 @@
-# Secrets
+# ============================================================================
+# SECRETS AND CREDENTIALS - NEVER COMMIT THESE
+# ============================================================================
+
+# Environment files
 .env
 .env.*
 !.env.example
 *.key
 *.pem
+
+# Terraform sensitive files
+infrastructure/terraform/terraform.tfvars
+infrastructure/terraform/*.tfvars
+infrastructure/terraform/.terraform/
+infrastructure/terraform/.terraform.lock.hcl
+infrastructure/terraform/terraform.tfstate
+infrastructure/terraform/terraform.tfstate.backup
+infrastructure/terraform/tfplan*
+infrastructure/deployment_outputs.txt
+
+# API response files (may contain sensitive data)
+response.json
+infrastructure/terraform/response.json
+
+# ============================================================================
+# DEVELOPMENT NOTES AND PERSONAL DOCUMENTATION - DO NOT COMMIT
+# ============================================================================
+
+# Claude/Gemini development context files
+CLAUDE.md
+GEMINI.md
+context/CONTEXT_PACK.md
+context/DESIGN_DECISIONS.md
+context/local/
+
+# Session and development summaries
+SESSION_SUMMARY.md
+PHASE*.md
+*_COMPLETE.md
+*_STATUS.md
+DASHBOARD_STATUS.md
+DASHBOARD_SETUP_STATUS.md
+
+# Deployment guides with embedded credentials
+DEPLOYMENT_CHECKLIST.md
+QUICK_START.md
+AWS_DEPLOYMENT_STEPS.md
+AWS_DEPLOYMENT_GUIDE.md
+COST_TRACKING.md
+
+# Infrastructure deployment guides (may have IPs/endpoints)
+infrastructure/terraform/DEPLOYMENT_GUIDE.md
+infrastructure/README.md
+
+# Script documentation with examples (may have real credentials in examples)
+scripts/BACKEND_VERIFICATION.md
+scripts/NOTIFICATION_SETUP.md
+scripts/deploy_to_ec2.sh
+
+# Runbooks and personal notes
+LOCAL_RUNBOOK.md
+FRONTEND_RUNBOOK.md
+QUICKSTART_DASHBOARD.md
+context/shared/runbook.md
+
+# Claude Code local settings
+.claude/settings.local.json
+.claude/.state/
+.claude/plans/
+
+# Gemini CLI settings
 .gemini/.env
 .gemini/**/.env
 
-# Local context packs (not committed for now)
-context/local/
+# ============================================================================
+# PYTHON
+# ============================================================================
 
-# Claude local settings and state
-.claude/settings.local.json
-.claude/.state/
-
-# Python
 .venv/
 __pycache__/
 *.pyc
@@ -26,19 +88,42 @@ __pycache__/
 *.egg-info/
 dist/
 build/
+uv.lock
 
-# IDEs
+# ============================================================================
+# JAVASCRIPT / NODE
+# ============================================================================
+
+node_modules/
+.next/
+frontend/.env.local
+frontend/.env.*.local
+frontend/out/
+frontend/build/
+
+# ============================================================================
+# IDEs AND EDITORS
+# ============================================================================
+
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
+*.code-workspace
 
-# OS
+# ============================================================================
+# OS FILES
+# ============================================================================
+
 .DS_Store
 Thumbs.db
+desktop.ini
 
-# Data files (trading system specific)
+# ============================================================================
+# DATA AND LOGS
+# ============================================================================
+
 *.db
 *.db-journal
 *.sqlite
@@ -46,26 +131,21 @@ Thumbs.db
 logs/
 *.log
 
-# Jupyter
+# Jupyter notebooks
 .ipynb_checkpoints/
 *.ipynb_checkpoints
 
-#personal docs
-COST_TRACKING.md
-AWS_DEPLOYMENT_GUIDE.md
+# ============================================================================
+# LAMBDA BUILD ARTIFACTS
+# ============================================================================
 
-# Terraform variable files and state
-infrastructure/terraform/terraform.tfvars
-infrastructure/terraform/*.tfvars
-infrastructure/terraform/.terraform/
-infrastructure/terraform/.terraform.lock.hcl
-infrastructure/terraform/terraform.tfstate
-infrastructure/terraform/terraform.tfstate.backup
-infrastructure/deployment_outputs.txt
-
-# Lambda build artifacts
 infrastructure/lambda/*.zip
 infrastructure/lambda/python/
 infrastructure/lambda/trading_loop_package/
 infrastructure/lambda/settlement_package/
-infrastructure/response.json
+
+# ============================================================================
+# VERIFICATION SCRIPTS (contain real API keys in code)
+# ============================================================================
+
+scripts/verify_*.py

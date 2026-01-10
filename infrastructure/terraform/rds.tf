@@ -22,15 +22,15 @@ resource "aws_db_parameter_group" "main" {
 
   # Connection pooling optimization
   parameter {
-    name  = "max_connections"
-    value = "100"
-    apply_method = "pending-reboot"  # Static parameter
+    name         = "max_connections"
+    value        = "100"
+    apply_method = "pending-reboot" # Static parameter
   }
 
   parameter {
-    name  = "shared_buffers"
-    value = "{DBInstanceClassMemory/32768}" # 25% of available memory
-    apply_method = "pending-reboot"  # Static parameter
+    name         = "shared_buffers"
+    value        = "{DBInstanceClassMemory/32768}" # 25% of available memory
+    apply_method = "pending-reboot"                # Static parameter
   }
 
   parameter {
@@ -88,12 +88,12 @@ resource "aws_db_instance" "main" {
   identifier = "${var.project_name}-postgres"
 
   # Engine configuration
-  engine               = "postgres"
-  engine_version       = var.rds_engine_version
-  instance_class       = var.rds_instance_class
-  allocated_storage    = var.rds_allocated_storage
-  storage_type         = "gp3"
-  storage_encrypted    = true
+  engine                = "postgres"
+  engine_version        = var.rds_engine_version
+  instance_class        = var.rds_instance_class
+  allocated_storage     = var.rds_allocated_storage
+  storage_type          = "gp3"
+  storage_encrypted     = true
   max_allocated_storage = 100 # Auto-scaling up to 100GB
 
   # Database configuration
@@ -113,7 +113,7 @@ resource "aws_db_instance" "main" {
 
   # Backup configuration
   backup_retention_period = var.rds_backup_retention_days
-  backup_window           = "03:00-04:00" # UTC
+  backup_window           = "03:00-04:00"         # UTC
   maintenance_window      = "sun:04:00-sun:05:00" # UTC
 
   # Snapshot configuration
@@ -127,7 +127,7 @@ resource "aws_db_instance" "main" {
   monitoring_role_arn             = aws_iam_role.rds_monitoring.arn
 
   # Performance Insights
-  performance_insights_enabled    = true
+  performance_insights_enabled          = true
   performance_insights_retention_period = 7 # 7 days (free tier)
 
   # Deletion protection
@@ -137,9 +137,9 @@ resource "aws_db_instance" "main" {
   auto_minor_version_upgrade = true
 
   tags = {
-    Name        = "${var.project_name}-postgres"
-    Component   = "Database"
-    CostCenter  = "Infrastructure"
+    Name       = "${var.project_name}-postgres"
+    Component  = "Database"
+    CostCenter = "Infrastructure"
   }
 
   lifecycle {

@@ -48,7 +48,7 @@ export function SignalFeed() {
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-display font-medium">Signal Feed</h2>
         <div className="flex items-center space-x-2">
-          <Filter className="w-4 h-4 text-terminal-text-secondary" />
+          <Filter className="w-4 h-4 text-text-secondary" />
           <select
             value={strategyFilter}
             onChange={(e) => setStrategyFilter(e.target.value)}
@@ -75,19 +75,19 @@ export function SignalFeed() {
       {signals && (
         <div className="mb-4 grid grid-cols-3 gap-4">
           <div className="glass-card p-3">
-            <p className="text-xs text-terminal-text-secondary">Long Signals</p>
+            <p className="text-xs text-text-secondary">Long Signals</p>
             <p className="text-base font-mono font-medium text-profit">
               {signals.filter((s) => s.direction === 'LONG').length}
             </p>
           </div>
           <div className="glass-card p-3">
-            <p className="text-xs text-terminal-text-secondary">Short Signals</p>
+            <p className="text-xs text-text-secondary">Short Signals</p>
             <p className="text-base font-mono font-medium text-loss">
               {signals.filter((s) => s.direction === 'SHORT').length}
             </p>
           </div>
           <div className="glass-card p-3">
-            <p className="text-xs text-terminal-text-secondary">Avg Confidence</p>
+            <p className="text-xs text-text-secondary">Avg Confidence</p>
             <p className="text-base font-mono font-medium">
               {((signals.reduce((sum, s) => sum + s.confidence, 0) / signals.length) * 100).toFixed(1)}%
             </p>
@@ -129,7 +129,7 @@ export function SignalFeed() {
                         {signal.direction}
                       </span>
                     </div>
-                    <p className="text-xs text-terminal-text-secondary mt-1">
+                    <p className="text-xs text-text-secondary mt-1">
                       {signal.strategy_name} • {signal.timeframe}
                     </p>
                   </div>
@@ -146,7 +146,7 @@ export function SignalFeed() {
                     </span>
                   )}
                   {signal.decision === 'PENDING' && (
-                    <span className="px-2 py-1 rounded text-xs font-mono font-semibold bg-terminal-border text-terminal-text-secondary">
+                    <span className="px-2 py-1 rounded text-xs font-mono font-semibold bg-border text-text-secondary">
                       PENDING
                     </span>
                   )}
@@ -156,15 +156,15 @@ export function SignalFeed() {
               {/* Price Levels */}
               <div className="grid grid-cols-3 gap-3 mb-3">
                 <div>
-                  <p className="text-xs text-terminal-text-secondary">Entry</p>
+                  <p className="text-xs text-text-secondary">Entry</p>
                   <p className="font-mono font-semibold">{formatCurrency(signal.suggested_entry)}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-terminal-text-secondary">Stop</p>
+                  <p className="text-xs text-text-secondary">Stop</p>
                   <p className="font-mono font-semibold text-loss">{formatCurrency(signal.suggested_stop)}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-terminal-text-secondary">Target</p>
+                  <p className="text-xs text-text-secondary">Target</p>
                   <p className="font-mono font-semibold text-profit">{formatCurrency(signal.suggested_target)}</p>
                 </div>
               </div>
@@ -173,10 +173,10 @@ export function SignalFeed() {
               <div className="flex items-center justify-between">
                 <div className="flex-1">
                   <div className="flex items-center justify-between text-xs mb-1">
-                    <span className="text-terminal-text-secondary">Confidence</span>
+                    <span className="text-text-secondary">Confidence</span>
                     <span className="font-mono font-semibold">{(signal.confidence * 100).toFixed(1)}%</span>
                   </div>
-                  <div className="h-2 bg-terminal-border rounded-full overflow-hidden">
+                  <div className="h-2 bg-border rounded-full overflow-hidden">
                     <div
                       className="h-full bg-gradient-to-r from-accent-blue to-accent-purple transition-all duration-500"
                       style={{ width: `${signal.confidence * 100}%` }}
@@ -184,13 +184,13 @@ export function SignalFeed() {
                   </div>
                 </div>
                 <div className="ml-4 text-right">
-                  <p className="text-xs text-terminal-text-secondary">R:R</p>
+                  <p className="text-xs text-text-secondary">R:R</p>
                   <p className="font-mono font-semibold">1:{riskReward.toFixed(2)}</p>
                 </div>
               </div>
 
               {/* Timestamp */}
-              <p className="text-xs text-terminal-text-secondary mt-3">{formatDateTime(signal.timestamp)}</p>
+              <p className="text-xs text-text-secondary mt-3">{formatDateTime(signal.timestamp)}</p>
             </div>
           );
         })}

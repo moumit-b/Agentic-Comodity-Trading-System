@@ -55,8 +55,8 @@ resource "aws_elasticache_replication_group" "main" {
   security_group_ids = [aws_security_group.redis.id]
 
   # Snapshot configuration
-  snapshot_retention_limit = 5 # Keep 5 daily snapshots
-  snapshot_window          = "03:00-05:00" # UTC
+  snapshot_retention_limit = 5                     # Keep 5 daily snapshots
+  snapshot_window          = "03:00-05:00"         # UTC
   maintenance_window       = "sun:05:00-sun:06:00" # UTC
 
   # Automatic failover (disabled for single node)

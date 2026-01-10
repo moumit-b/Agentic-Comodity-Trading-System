@@ -286,11 +286,11 @@ resource "aws_cloudwatch_metric_alarm" "trading_loop_throttles" {
 
 # Composite Alarm - Critical System Health
 resource "aws_cloudwatch_composite_alarm" "system_health" {
-  alarm_name          = "${var.project_name}-system-health-critical"
-  alarm_description   = "Critical system health issues detected"
-  actions_enabled     = true
-  alarm_actions       = [aws_sns_topic.alarms.arn]
-  ok_actions          = [aws_sns_topic.alarms.arn]
+  alarm_name        = "${var.project_name}-system-health-critical"
+  alarm_description = "Critical system health issues detected"
+  actions_enabled   = true
+  alarm_actions     = [aws_sns_topic.alarms.arn]
+  ok_actions        = [aws_sns_topic.alarms.arn]
 
   alarm_rule = "ALARM(${aws_cloudwatch_metric_alarm.trading_loop_errors.alarm_name}) OR ALARM(${aws_cloudwatch_metric_alarm.rds_cpu.alarm_name}) OR ALARM(${aws_cloudwatch_metric_alarm.dashboard_status_check.alarm_name})"
 

@@ -3,10 +3,13 @@
 import logging
 from decimal import Decimal
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from sqlalchemy import select
 
+from src.api.auth import verify_api_key
 from src.api.schemas.responses import CircuitBreakerResponse
 from src.core.database import get_session
 from src.models.risk import CircuitBreaker
@@ -15,6 +18,7 @@ from src.services.circuit_breakers import CircuitBreakerService
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+limiter = Limiter(key_func=get_remote_address)
 
 
 class KillSwitchRequest(BaseModel):
@@ -25,7 +29,11 @@ class KillSwitchRequest(BaseModel):
 
 
 @router.get("/circuit-breakers", response_model=list[CircuitBreakerResponse])
-async def get_circuit_breakers():
+@limiter.limit("60/minute")
+async def get_circuit_breakers(
+    request: Request,
+    _api_key: str = Depends(verify_api_key),
+):
     """Get all circuit breaker statuses."""
     try:
         async with get_session() as session:
@@ -78,15 +86,23 @@ async def get_circuit_breakers():
 
 
 @router.post("/kill-switch")
-async def manage_kill_switch(request: KillSwitchRequest):
+@limiter.limit("5/minute")  # Very strict limit for kill switch
+async def manage_kill_switch(
+    request: Request,
+    kill_switch_request: KillSwitchRequest = None,
+    _api_key: str = Depends(verify_api_key),
+):
     """Activate or clear the kill switch."""
     try:
+        if not kill_switch_request:
+            raise HTTPException(status_code=400, detail="Request body required")
+
         circuit_breaker = CircuitBreakerService()
 
-        if request.action == "activate":
+        if kill_switch_request.action == "activate":
             await circuit_breaker.activate_kill_switch()
-            return {"status": "success", "action": "activated", "reason": request.reason}
-        elif request.action == "clear":
+            return {"status": "success", "action": "activated", "reason": kill_switch_request.reason}
+        elif kill_switch_request.action == "clear":
             cleared = await circuit_breaker.clear_kill_switch()
             return {"status": "success" if cleared else "failed", "action": "cleared"}
         else:
@@ -100,7 +116,11 @@ async def manage_kill_switch(request: KillSwitchRequest):
 
 
 @router.get("/circuit-breakers/status")
-async def get_breaker_status():
+@limiter.limit("60/minute")
+async def get_breaker_status(
+    request: Request,
+    _api_key: str = Depends(verify_api_key),
+):
     """Get overall circuit breaker status."""
     try:
         circuit_breaker = CircuitBreakerService()

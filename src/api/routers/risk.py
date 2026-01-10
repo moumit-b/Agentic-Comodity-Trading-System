@@ -1,27 +1,35 @@
 """Risk metrics API endpoints."""
 
 import logging
+from datetime import datetime
 from decimal import Decimal
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+from sqlalchemy import select
 
 from src.agents.risk_manager import RiskManagerAgent
+from src.api.auth import verify_api_key
 from src.api.schemas.responses import BarResponse, IndicatorResponse, RiskMetricsResponse
 from src.core.config import AlpacaConfig, TradingConfig
 from src.core.database import get_session
 from src.models.account import DailyLimit
 from src.models.bars import Bar1m, Indicator
 from src.services.alpaca_api import AlpacaService
-from sqlalchemy import select
-from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+limiter = Limiter(key_func=get_remote_address)
 
 
 @router.get("/risk/metrics", response_model=RiskMetricsResponse)
-async def get_risk_metrics():
+@limiter.limit("60/minute")
+async def get_risk_metrics(
+    request: Request,
+    _api_key: str = Depends(verify_api_key),
+):
     """Get current risk metrics."""
     try:
         config = TradingConfig()
@@ -69,7 +77,13 @@ async def get_risk_metrics():
 
 
 @router.get("/bars/{symbol}", response_model=list[BarResponse])
-async def get_bars(symbol: str, limit: int = 390):
+@limiter.limit("60/minute")
+async def get_bars(
+    request: Request,
+    symbol: str = "",
+    limit: int = 390,
+    _api_key: str = Depends(verify_api_key),
+):
     """Get price bars for symbol."""
     try:
         async with get_session() as session:
@@ -100,7 +114,14 @@ async def get_bars(symbol: str, limit: int = 390):
 
 
 @router.get("/indicators/{symbol}", response_model=list[IndicatorResponse])
-async def get_indicators(symbol: str, timeframe: str = "5m", limit: int = 100):
+@limiter.limit("60/minute")
+async def get_indicators(
+    request: Request,
+    symbol: str = "",
+    timeframe: str = "5m",
+    limit: int = 100,
+    _api_key: str = Depends(verify_api_key),
+):
     """Get technical indicators for symbol."""
     try:
         async with get_session() as session:

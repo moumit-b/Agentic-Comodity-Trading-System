@@ -27,7 +27,7 @@ export function PositionsTable() {
     return (
       <div className="glass-card p-6">
         <h2 className="text-lg font-display font-medium mb-4">Open Positions</h2>
-        <div className="text-center py-12 text-terminal-text-secondary">
+        <div className="text-center py-12 text-text-secondary">
           <TrendingUp className="w-12 h-12 mx-auto mb-3 opacity-30" />
           <p>No open positions</p>
         </div>
@@ -44,17 +44,17 @@ export function PositionsTable() {
         <h2 className="text-lg font-display font-medium">Open Positions</h2>
         <div className="flex items-center space-x-6">
           <div>
-            <p className="text-xs text-terminal-text-secondary">Positions</p>
+            <p className="text-xs text-text-secondary">Positions</p>
             <p className="text-base font-mono font-medium">{positions.length}</p>
           </div>
           <div>
-            <p className="text-xs text-terminal-text-secondary">Total P&L</p>
-            <p className={cn('text-base font-mono font-medium', totalPnL >= 0 ? 'profit-glow' : 'loss-glow')}>
+            <p className="text-xs text-text-secondary">Total P&L</p>
+            <p className={cn('text-base font-mono font-medium', totalPnL >= 0 ? 'text-profit' : 'text-loss')}>
               {formatCurrency(totalPnL)}
             </p>
           </div>
           <div>
-            <p className="text-xs text-terminal-text-secondary">Avg P&L %</p>
+            <p className="text-xs text-text-secondary">Avg P&L %</p>
             <p className={cn('text-base font-mono font-medium', avgPnLPct >= 0 ? 'text-profit' : 'text-loss')}>
               {formatPercent(avgPnLPct)}
             </p>
@@ -65,35 +65,35 @@ export function PositionsTable() {
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-terminal-border">
-              <th className="text-left text-xs font-display font-semibold text-terminal-text-secondary uppercase tracking-wider py-3 px-4">
+            <tr className="border-b border">
+              <th className="text-left text-xs font-display font-semibold text-text-secondary uppercase tracking-wider py-3 px-4">
                 Symbol
               </th>
-              <th className="text-left text-xs font-display font-semibold text-terminal-text-secondary uppercase tracking-wider py-3 px-4">
+              <th className="text-left text-xs font-display font-semibold text-text-secondary uppercase tracking-wider py-3 px-4">
                 Side
               </th>
-              <th className="text-right text-xs font-display font-semibold text-terminal-text-secondary uppercase tracking-wider py-3 px-4">
+              <th className="text-right text-xs font-display font-semibold text-text-secondary uppercase tracking-wider py-3 px-4">
                 Qty
               </th>
-              <th className="text-right text-xs font-display font-semibold text-terminal-text-secondary uppercase tracking-wider py-3 px-4">
+              <th className="text-right text-xs font-display font-semibold text-text-secondary uppercase tracking-wider py-3 px-4">
                 Entry
               </th>
-              <th className="text-right text-xs font-display font-semibold text-terminal-text-secondary uppercase tracking-wider py-3 px-4">
+              <th className="text-right text-xs font-display font-semibold text-text-secondary uppercase tracking-wider py-3 px-4">
                 Current
               </th>
-              <th className="text-right text-xs font-display font-semibold text-terminal-text-secondary uppercase tracking-wider py-3 px-4">
+              <th className="text-right text-xs font-display font-semibold text-text-secondary uppercase tracking-wider py-3 px-4">
                 P&L ($)
               </th>
-              <th className="text-right text-xs font-display font-semibold text-terminal-text-secondary uppercase tracking-wider py-3 px-4">
+              <th className="text-right text-xs font-display font-semibold text-text-secondary uppercase tracking-wider py-3 px-4">
                 P&L (%)
               </th>
-              <th className="text-right text-xs font-display font-semibold text-terminal-text-secondary uppercase tracking-wider py-3 px-4">
+              <th className="text-right text-xs font-display font-semibold text-text-secondary uppercase tracking-wider py-3 px-4">
                 Stop
               </th>
-              <th className="text-right text-xs font-display font-semibold text-terminal-text-secondary uppercase tracking-wider py-3 px-4">
+              <th className="text-right text-xs font-display font-semibold text-text-secondary uppercase tracking-wider py-3 px-4">
                 Target
               </th>
-              <th className="text-center text-xs font-display font-semibold text-terminal-text-secondary uppercase tracking-wider py-3 px-4">
+              <th className="text-center text-xs font-display font-semibold text-text-secondary uppercase tracking-wider py-3 px-4">
 
               </th>
             </tr>
@@ -109,7 +109,7 @@ export function PositionsTable() {
                   <tr
                     key={position.id}
                     className={cn(
-                      'border-b border-terminal-border/30 hover:bg-white/5 transition-colors cursor-pointer',
+                      'border-b border/30 hover:bg-white/5 transition-colors cursor-pointer',
                       index % 2 === 0 ? 'bg-white/[0.02]' : ''
                     )}
                     onClick={() => setExpandedRow(isExpanded ? null : position.id)}
@@ -137,7 +137,7 @@ export function PositionsTable() {
                     <td className="text-right font-mono py-3 px-4">{position.qty}</td>
                     <td className="text-right font-mono py-3 px-4">{formatCurrency(position.entry_price)}</td>
                     <td className="text-right font-mono py-3 px-4">{formatCurrency(position.current_price)}</td>
-                    <td className={cn('text-right font-mono font-medium py-3 px-4', pnl >= 0 ? 'profit-glow' : 'loss-glow')}>
+                    <td className={cn('text-right font-mono font-medium py-3 px-4', pnl >= 0 ? 'text-profit' : 'text-loss')}>
                       {formatCurrency(pnl)}
                     </td>
                     <td className={cn('text-right font-mono font-medium py-3 px-4', pnlPct >= 0 ? 'text-profit' : 'text-loss')}>
@@ -151,28 +151,28 @@ export function PositionsTable() {
                     </td>
                     <td className="text-center py-3 px-4">
                       {isExpanded ? (
-                        <ChevronUp className="w-4 h-4 text-terminal-text-secondary mx-auto" />
+                        <ChevronUp className="w-4 h-4 text-text-secondary mx-auto" />
                       ) : (
-                        <ChevronDown className="w-4 h-4 text-terminal-text-secondary mx-auto" />
+                        <ChevronDown className="w-4 h-4 text-text-secondary mx-auto" />
                       )}
                     </td>
                   </tr>
                   {isExpanded && (
                     <tr>
-                      <td colSpan={10} className="bg-white/[0.02] border-b border-terminal-border/30">
+                      <td colSpan={10} className="bg-white/[0.02] border-b border/30">
                         <div className="p-4 grid grid-cols-3 gap-4">
                           <div>
-                            <p className="text-xs text-terminal-text-secondary mb-1">Position Value</p>
+                            <p className="text-xs text-text-secondary mb-1">Position Value</p>
                             <p className="font-mono font-medium">
                               {formatCurrency(position.qty * position.current_price)}
                             </p>
                           </div>
                           <div>
-                            <p className="text-xs text-terminal-text-secondary mb-1">Opened At</p>
+                            <p className="text-xs text-text-secondary mb-1">Opened At</p>
                             <p className="font-mono">{formatDateTime(position.opened_at)}</p>
                           </div>
                           <div>
-                            <p className="text-xs text-terminal-text-secondary mb-1">Risk:Reward</p>
+                            <p className="text-xs text-text-secondary mb-1">Risk:Reward</p>
                             <p className="font-mono">
                               {position.stop_loss && position.take_profit
                                 ? `1:${((position.take_profit - position.entry_price) / (position.entry_price - position.stop_loss)).toFixed(2)}`

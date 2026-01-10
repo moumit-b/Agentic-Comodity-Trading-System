@@ -1,10 +1,17 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+const API_KEY = process.env.NEXT_PUBLIC_DASHBOARD_API_KEY || '';
 
 class ApiClient {
   private baseUrl: string;
+  private apiKey: string;
 
-  constructor(baseUrl: string) {
+  constructor(baseUrl: string, apiKey: string) {
     this.baseUrl = baseUrl;
+    this.apiKey = apiKey;
+
+    if (!this.apiKey) {
+      console.warn('NEXT_PUBLIC_DASHBOARD_API_KEY not set. API requests will fail.');
+    }
   }
 
   private async request<T>(endpoint: string, options?: RequestInit): Promise<T> {
@@ -12,15 +19,23 @@ class ApiClient {
       ...options,
       headers: {
         'Content-Type': 'application/json',
+        'X-API-Key': this.apiKey,
         ...options?.headers,
       },
     });
 
     if (!response.ok) {
-      throw new Error(`API Error: ${response.statusText}`);
+      const errorText = await response.text();
+      throw new Error(`API Error ${response.status}: ${errorText || response.statusText}`);
     }
 
     return response.json();
+  }
+
+  getWebSocketUrl(): string {
+    // Convert HTTP URL to WebSocket URL and add API key
+    const wsBase = this.baseUrl.replace('http://', 'ws://').replace('https://', 'wss://').replace('/api', '');
+    return `${wsBase}/api/ws?api_key=${encodeURIComponent(this.apiKey)}`;
   }
 
   async getAccount() {
@@ -66,8 +81,8 @@ class ApiClient {
     return this.request<any>('/risk/metrics');
   }
 
-  async getBars(symbol: string, limit = 390) {
-    return this.request<any[]>(`/bars/${symbol}?limit=${limit}`);
+  async getBars(symbol: string, limit = 390, timeframe = '1Day') {
+    return this.request<any[]>(`/bars/${symbol}?limit=${limit}&timeframe=${timeframe}`);
   }
 
   async getIndicators(symbol: string, timeframe = '5m', limit = 100) {
@@ -79,4 +94,4 @@ class ApiClient {
   }
 }
 
-export const apiClient = new ApiClient(API_BASE_URL);
+export const apiClient = new ApiClient(API_BASE_URL, API_KEY);

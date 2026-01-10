@@ -220,6 +220,12 @@ variable "alarm_email" {
   type        = string
 }
 
+variable "alert_email" {
+  description = "Email address for budget alerts (same as alarm_email)"
+  type        = string
+  default     = ""
+}
+
 # Tags
 variable "additional_tags" {
   description = "Additional tags to apply to all resources"

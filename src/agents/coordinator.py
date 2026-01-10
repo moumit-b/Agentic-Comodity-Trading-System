@@ -87,6 +87,7 @@ class CoordinatorAgent:
         current_positions: int,
         daily_trades_count: int,
         consecutive_losses: int,
+        daily_pnl_pct: Decimal,
     ) -> TradeDecision:
         """
         Run complete trading cycle.
@@ -97,6 +98,7 @@ class CoordinatorAgent:
             current_positions: Number of open positions
             daily_trades_count: Trades executed today
             consecutive_losses: Consecutive losing trades
+            daily_pnl_pct: Daily P&L as percentage
 
         Returns:
             TradeDecision with approval status and details
@@ -109,7 +111,7 @@ class CoordinatorAgent:
         portfolio_risk = await self.risk_manager.calculate_portfolio_heat(account_balance)
 
         breaker_status = await self.circuit_breakers.check_all_breakers(
-            daily_pnl_pct=Decimal("0.0"),  # TODO: Calculate from account
+            daily_pnl_pct=daily_pnl_pct,
             consecutive_losses=consecutive_losses,
             portfolio_heat=portfolio_risk.current_heat,
         )
@@ -500,10 +502,24 @@ class CoordinatorAgent:
         )
 
     async def shutdown(self):
-        """Graceful shutdown - close all positions if configured."""
+        """
+        Graceful shutdown.
+
+        Note: In production, this would:
+        - Cancel all pending orders via Alpaca API
+        - Close end-of-day positions if configured
+        - Send shutdown notification with summary
+        """
         logger.info("Coordinator shutdown initiated")
-        # TODO: Implement graceful shutdown
-        # - Cancel pending orders
-        # - Close positions if end-of-day
-        # - Send summary notification
+
+        # Send notification if available
+        if self.notifier:
+            try:
+                await self.notifier.send_message(
+                    message="🛑 Trading system shutdown initiated",
+                    title="System Shutdown"
+                )
+            except Exception as e:
+                logger.error(f"Failed to send shutdown notification: {e}")
+
         logger.info("Coordinator shutdown complete")

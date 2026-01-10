@@ -27,11 +27,6 @@ export function RiskGauges() {
     return '#ff1744';
   };
 
-  const getGaugeRotation = (value: number, max: number) => {
-    const percentage = Math.min(value / max, 1);
-    return -90 + percentage * 180; // -90deg to 90deg range
-  };
-
   return (
     <div className="glass-card p-6">
       <h2 className="text-lg font-display font-medium mb-6">Risk Metrics</h2>
@@ -40,14 +35,14 @@ export function RiskGauges() {
         {/* Portfolio Heat Gauge */}
         {riskMetrics && (
           <div>
-            <h3 className="text-sm font-display font-semibold text-terminal-text-secondary mb-3">
+            <h3 className="text-sm font-display font-semibold text-text-secondary mb-3">
               Portfolio Heat
             </h3>
             <div className="relative w-48 h-24 mx-auto">
-              <svg viewBox="0 0 200 100" className="w-full h-full">
+              <svg viewBox="0 0 200 120" className="w-full h-full">
                 {/* Background arc */}
                 <path
-                  d="M 20 80 A 80 80 0 0 1 180 80"
+                  d="M 20 100 A 80 80 0 0 1 180 100"
                   fill="none"
                   stroke="#1e1e2e"
                   strokeWidth="12"
@@ -55,7 +50,7 @@ export function RiskGauges() {
                 />
                 {/* Value arc */}
                 <path
-                  d="M 20 80 A 80 80 0 0 1 180 80"
+                  d="M 20 100 A 80 80 0 0 1 180 100"
                   fill="none"
                   stroke={getGaugeColor(riskMetrics.portfolio_heat_pct, { green: 40, yellow: 70 })}
                   strokeWidth="12"
@@ -63,14 +58,6 @@ export function RiskGauges() {
                   strokeDasharray={`${(riskMetrics.portfolio_heat_pct / 100) * 251.2} 251.2`}
                   className="transition-all duration-1000"
                 />
-                {/* Needle */}
-                <g
-                  transform={`rotate(${getGaugeRotation(riskMetrics.portfolio_heat_pct, 100)} 100 80)`}
-                  className="transition-transform duration-1000"
-                >
-                  <line x1="100" y1="80" x2="100" y2="30" stroke="white" strokeWidth="2" />
-                  <circle cx="100" cy="80" r="4" fill="white" />
-                </g>
               </svg>
               <div className="absolute inset-0 flex items-end justify-center pb-2">
                 <span className="text-2xl font-mono font-light">
@@ -78,7 +65,7 @@ export function RiskGauges() {
                 </span>
               </div>
             </div>
-            <div className="flex justify-between text-xs text-terminal-text-secondary mt-2">
+            <div className="flex justify-between text-xs text-text-secondary mt-2">
               <span>0%</span>
               <span>50%</span>
               <span>100%</span>
@@ -89,14 +76,14 @@ export function RiskGauges() {
         {/* RSI Gauge */}
         {riskMetrics && (
           <div>
-            <h3 className="text-sm font-display font-semibold text-terminal-text-secondary mb-3">
+            <h3 className="text-sm font-display font-semibold text-text-secondary mb-3">
               RSI (USO)
             </h3>
             <div className="relative w-48 h-24 mx-auto">
-              <svg viewBox="0 0 200 100" className="w-full h-full">
+              <svg viewBox="0 0 200 120" className="w-full h-full">
                 {/* Background arc */}
                 <path
-                  d="M 20 80 A 80 80 0 0 1 180 80"
+                  d="M 20 100 A 80 80 0 0 1 180 100"
                   fill="none"
                   stroke="#1e1e2e"
                   strokeWidth="12"
@@ -104,7 +91,7 @@ export function RiskGauges() {
                 />
                 {/* Value arc */}
                 <path
-                  d="M 20 80 A 80 80 0 0 1 180 80"
+                  d="M 20 100 A 80 80 0 0 1 180 100"
                   fill="none"
                   stroke={getGaugeColor(riskMetrics.current_rsi, { green: 30, yellow: 70 })}
                   strokeWidth="12"
@@ -112,14 +99,6 @@ export function RiskGauges() {
                   strokeDasharray={`${(riskMetrics.current_rsi / 100) * 251.2} 251.2`}
                   className="transition-all duration-1000"
                 />
-                {/* Needle */}
-                <g
-                  transform={`rotate(${getGaugeRotation(riskMetrics.current_rsi, 100)} 100 80)`}
-                  className="transition-transform duration-1000"
-                >
-                  <line x1="100" y1="80" x2="100" y2="30" stroke="white" strokeWidth="2" />
-                  <circle cx="100" cy="80" r="4" fill="white" />
-                </g>
               </svg>
               <div className="absolute inset-0 flex items-end justify-center pb-2">
                 <span className="text-2xl font-mono font-light">
@@ -127,7 +106,7 @@ export function RiskGauges() {
                 </span>
               </div>
             </div>
-            <div className="flex justify-between text-xs text-terminal-text-secondary mt-2">
+            <div className="flex justify-between text-xs text-text-secondary mt-2">
               <span className="text-loss">Oversold</span>
               <span>Neutral</span>
               <span className="text-profit">Overbought</span>
@@ -138,17 +117,17 @@ export function RiskGauges() {
         {/* Daily P&L Progress */}
         {riskMetrics && (
           <div>
-            <h3 className="text-sm font-display font-semibold text-terminal-text-secondary mb-3">
+            <h3 className="text-sm font-display font-semibold text-text-secondary mb-3">
               Daily P&L Progress
             </h3>
             <div className="space-y-2">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-terminal-text-secondary">Target:</span>
+                <span className="text-text-secondary">Target:</span>
                 <span className="font-mono font-semibold text-profit">
                   +{riskMetrics.daily_target_pct.toFixed(1)}%
                 </span>
               </div>
-              <div className="relative h-6 bg-terminal-border rounded-full overflow-hidden">
+              <div className="relative h-6 bg-border rounded-full overflow-hidden">
                 {/* Limit zone (red) */}
                 <div
                   className="absolute left-0 top-0 h-full bg-loss/20"
@@ -180,7 +159,7 @@ export function RiskGauges() {
                 <span className="font-mono font-semibold text-loss">
                   {riskMetrics.daily_limit_pct.toFixed(1)}%
                 </span>
-                <span className={cn('font-mono font-medium text-base', riskMetrics.daily_pnl_pct >= 0 ? 'profit-glow' : 'loss-glow')}>
+                <span className={cn('font-mono font-medium text-base', riskMetrics.daily_pnl_pct >= 0 ? 'text-profit' : 'text-loss')}>
                   {formatPercent(riskMetrics.daily_pnl_pct)}
                 </span>
                 <span className="font-mono font-semibold text-profit">
@@ -196,7 +175,7 @@ export function RiskGauges() {
           <div className="glass-card p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-terminal-text-secondary">Consecutive Losses</p>
+                <p className="text-xs text-text-secondary">Consecutive Losses</p>
                 <p className="text-xl font-mono font-light">
                   {riskMetrics.consecutive_losses} / {riskMetrics.max_consecutive_losses}
                 </p>

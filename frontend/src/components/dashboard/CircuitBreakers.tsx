@@ -41,8 +41,8 @@ export function CircuitBreakers() {
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-lg font-display font-medium">Circuit Breakers</h2>
         <div className="text-right">
-          <p className="text-xs text-terminal-text-secondary">System Health</p>
-          <p className={cn('text-xl font-mono font-light', healthPct === 100 ? 'profit-glow' : healthPct > 50 ? 'text-warning' : 'loss-glow')}>
+          <p className="text-xs text-text-secondary">System Health</p>
+          <p className={cn('text-xl font-mono font-light', healthPct === 100 ? 'text-profit' : healthPct > 50 ? 'text-warning' : 'text-loss')}>
             {healthPct.toFixed(0)}%
           </p>
         </div>
@@ -56,7 +56,7 @@ export function CircuitBreakers() {
               'glass-card p-4 transition-all duration-300',
               breaker.is_active
                 ? 'border-loss/50 bg-loss/5 animate-pulse-glow'
-                : 'border-terminal-border/50'
+                : 'border/50'
             )}
           >
             <div className="flex items-center justify-between">
@@ -70,7 +70,7 @@ export function CircuitBreakers() {
                   <p className="font-display font-semibold">
                     {breakerLabels[breaker.breaker_type] || breaker.breaker_type}
                   </p>
-                  <p className="text-xs text-terminal-text-secondary mt-0.5">
+                  <p className="text-xs text-text-secondary mt-0.5">
                     {breaker.is_active ? (
                       <span className="text-loss font-mono">ACTIVE</span>
                     ) : (
@@ -81,14 +81,14 @@ export function CircuitBreakers() {
               </div>
               {breaker.is_active && breaker.triggered_at && (
                 <div className="text-right text-xs">
-                  <p className="text-terminal-text-secondary">Triggered</p>
+                  <p className="text-text-secondary">Triggered</p>
                   <p className="font-mono">{formatDateTime(breaker.triggered_at)}</p>
                 </div>
               )}
             </div>
             {breaker.is_active && breaker.reason && (
-              <div className="mt-3 pt-3 border-t border-terminal-border/30">
-                <p className="text-xs text-terminal-text-secondary">Reason:</p>
+              <div className="mt-3 pt-3 border-t border/30">
+                <p className="text-xs text-text-secondary">Reason:</p>
                 <p className="text-sm mt-1">{breaker.reason}</p>
               </div>
             )}
@@ -102,7 +102,7 @@ export function CircuitBreakers() {
             <AlertTriangle className="w-5 h-5 text-loss flex-shrink-0 mt-0.5" />
             <div>
               <p className="font-display font-semibold text-loss">Trading Halted</p>
-              <p className="text-sm text-terminal-text-secondary mt-1">
+              <p className="text-sm text-text-secondary mt-1">
                 {activeCount} circuit breaker{activeCount > 1 ? 's' : ''} active. Trading is suspended.
                 Clear breakers to resume.
               </p>

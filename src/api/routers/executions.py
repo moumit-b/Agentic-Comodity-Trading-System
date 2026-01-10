@@ -2,10 +2,13 @@
 
 import logging
 
-from fastapi import APIRouter, HTTPException, Path, Query
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request
 from pydantic import BaseModel
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from sqlalchemy import select
 
+from src.api.auth import verify_api_key
 from src.api.schemas.responses import ExecutionResponse
 from src.core.database import get_session
 from src.models.execution import Execution
@@ -13,6 +16,7 @@ from src.models.execution import Execution
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+limiter = Limiter(key_func=get_remote_address)
 
 
 class ConfirmationRequest(BaseModel):
@@ -23,8 +27,11 @@ class ConfirmationRequest(BaseModel):
 
 
 @router.get("/executions", response_model=list[ExecutionResponse])
+@limiter.limit("60/minute")
 async def get_executions(
+    request: Request,
     limit: int = Query(50, ge=1, le=1000, description="Number of executions to return"),
+    _api_key: str = Depends(verify_api_key),
 ):
     """Get recent executions."""
     try:
@@ -53,7 +60,11 @@ async def get_executions(
 
 
 @router.get("/executions/pending", response_model=list[ExecutionResponse])
-async def get_pending_confirmations():
+@limiter.limit("60/minute")
+async def get_pending_confirmations(
+    request: Request,
+    _api_key: str = Depends(verify_api_key),
+):
     """Get executions pending confirmation."""
     try:
         async with get_session() as session:
@@ -83,9 +94,12 @@ async def get_pending_confirmations():
 
 
 @router.post("/executions/{execution_id}/confirm")
+@limiter.limit("10/minute")  # Stricter limit for trading actions
 async def confirm_execution(
+    request: Request,
     execution_id: int = Path(..., description="Execution ID"),
-    request: ConfirmationRequest = None,
+    confirmation_request: ConfirmationRequest = None,
+    _api_key: str = Depends(verify_api_key),
 ):
     """Confirm or reject an execution."""
     try:
@@ -103,12 +117,12 @@ async def confirm_execution(
                 )
 
             # TODO: Implement confirmation logic
-            # Update execution status based on request.action
+            # Update execution status based on confirmation_request.action
 
             return {
                 "status": "success",
                 "execution_id": execution_id,
-                "action": request.action,
+                "action": confirmation_request.action if confirmation_request else "unknown",
             }
     except HTTPException:
         raise

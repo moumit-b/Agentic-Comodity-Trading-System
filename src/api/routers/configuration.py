@@ -2,15 +2,19 @@
 
 import logging
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
+from src.api.auth import verify_api_key
 from src.api.schemas.responses import ConfigurationResponse
 from src.core.config import AutomationMode, TradingConfig
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+limiter = Limiter(key_func=get_remote_address)
 
 
 class ModeChangeRequest(BaseModel):
@@ -20,7 +24,11 @@ class ModeChangeRequest(BaseModel):
 
 
 @router.get("/configuration", response_model=ConfigurationResponse)
-async def get_configuration():
+@limiter.limit("60/minute")
+async def get_configuration(
+    request: Request,
+    _api_key: str = Depends(verify_api_key),
+):
     """Get current trading configuration."""
     try:
         config = TradingConfig()
@@ -42,12 +50,20 @@ async def get_configuration():
 
 
 @router.post("/configuration/mode")
-async def change_automation_mode(request: ModeChangeRequest):
+@limiter.limit("10/minute")  # Stricter limit for mode changes
+async def change_automation_mode(
+    request: Request,
+    mode_request: ModeChangeRequest = None,
+    _api_key: str = Depends(verify_api_key),
+):
     """Change automation mode."""
     try:
+        if not mode_request:
+            raise HTTPException(status_code=400, detail="Request body required")
+
         # Validate mode
         try:
-            mode = AutomationMode(request.mode)
+            mode = AutomationMode(mode_request.mode)
         except ValueError:
             raise HTTPException(
                 status_code=400,
@@ -57,11 +73,11 @@ async def change_automation_mode(request: ModeChangeRequest):
         # TODO: Implement mode change logic
         # This would need to update the config or database
 
-        logger.info(f"Automation mode change requested: {request.mode}")
+        logger.info(f"Automation mode change requested: {mode_request.mode}")
 
         return {
             "status": "success",
-            "mode": request.mode,
+            "mode": mode_request.mode,
             "message": "Mode change requires system restart to take effect",
         }
     except HTTPException:

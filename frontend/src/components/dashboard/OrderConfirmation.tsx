@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useApi } from '@/hooks/useApi';
 import { apiClient } from '@/lib/api';
 import { formatCurrency, cn } from '@/lib/utils';
-import { Clock, TrendingUp, TrendingDown, CheckCircle, XCircle } from 'lucide-react';
+import { Clock, TrendingUp, TrendingDown, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import type { Execution } from '@/types';
 
 export function OrderConfirmation() {
@@ -13,33 +13,73 @@ export function OrderConfirmation() {
     3000
   );
   const [countdown, setCountdown] = useState<Record<number, number>>({});
+  const [loading, setLoading] = useState<Record<number, boolean>>({});
+  const [error, setError] = useState<string | null>(null);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Use useRef for timer to prevent recreation on every render
   useEffect(() => {
-    if (!pendingExecutions) return;
+    if (!pendingExecutions || pendingExecutions.length === 0) {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+      return;
+    }
 
-    const timer = setInterval(() => {
+    // Initialize countdown for new executions
+    setCountdown((prev) => {
+      const updated = { ...prev };
+      pendingExecutions.forEach((exec) => {
+        if (!(exec.id in updated)) {
+          updated[exec.id] = 30;
+        }
+      });
+      return updated;
+    });
+
+    // Clear existing timer
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
+
+    // Start new timer
+    timerRef.current = setInterval(() => {
       setCountdown((prev) => {
         const updated = { ...prev };
+        let hasChanges = false;
+
         pendingExecutions.forEach((exec) => {
-          if (!(exec.id in updated)) {
-            updated[exec.id] = 30;
-          } else if (updated[exec.id] > 0) {
+          if (updated[exec.id] > 0) {
             updated[exec.id] -= 1;
+            hasChanges = true;
           }
         });
-        return updated;
+
+        return hasChanges ? updated : prev;
       });
     }, 1000);
 
-    return () => clearInterval(timer);
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
   }, [pendingExecutions]);
 
   const handleConfirm = async (executionId: number, action: 'approve' | 'reject') => {
+    setLoading((prev) => ({ ...prev, [executionId]: true }));
+    setError(null);
+
     try {
       await apiClient.confirmExecution(executionId, action);
-      refetch();
+      await refetch();
     } catch (error) {
       console.error('Failed to confirm execution:', error);
+      setError(`Failed to ${action} execution. Please try again.`);
+    } finally {
+      setLoading((prev) => ({ ...prev, [executionId]: false }));
     }
   };
 
@@ -50,6 +90,11 @@ export function OrderConfirmation() {
   return (
     <div className="glass-card p-6">
       <h2 className="text-base font-medium mb-4 text-accent-purple">Pending Confirmations</h2>
+      {error && (
+        <div className="mb-4 p-3 bg-loss/10 border border-loss/30 rounded-lg">
+          <p className="text-sm text-loss">{error}</p>
+        </div>
+      )}
       <div className="space-y-4">
         {pendingExecutions.map((execution) => {
           const timeLeft = countdown[execution.id] || 30;
@@ -77,14 +122,14 @@ export function OrderConfirmation() {
                   )}
                   <div>
                     <p className="font-mono font-medium text-lg">{execution.symbol}</p>
-                    <p className="text-sm text-terminal-text-secondary">
+                    <p className="text-sm text-text-secondary">
                       {execution.side} • {execution.qty} shares
                     </p>
                   </div>
                 </div>
                 <div className="text-right">
                   <div className="flex items-center space-x-2">
-                    <Clock className={cn('w-4 h-4', isExpiring ? 'text-loss animate-pulse' : 'text-terminal-text-secondary')} />
+                    <Clock className={cn('w-4 h-4', isExpiring ? 'text-loss animate-pulse' : 'text-text-secondary')} />
                     <span className={cn('font-mono font-medium', isExpiring ? 'text-loss' : 'text-accent-cyan')}>
                       {timeLeft}s
                     </span>
@@ -95,7 +140,7 @@ export function OrderConfirmation() {
               {/* Price Info */}
               <div className="glass-card p-3 mb-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-terminal-text-secondary">Entry Price</span>
+                  <span className="text-sm text-text-secondary">Entry Price</span>
                   <span className="font-mono font-medium text-base">
                     {execution.filled_price ? formatCurrency(execution.filled_price) : 'Market'}
                   </span>
@@ -106,17 +151,31 @@ export function OrderConfirmation() {
               <div className="grid grid-cols-2 gap-3">
                 <button
                   onClick={() => handleConfirm(execution.id, 'reject')}
-                  className="glass-card p-4 border-loss/30 hover:bg-loss/10 hover:border-loss transition-all duration-200 group"
+                  disabled={loading[execution.id]}
+                  className="glass-card p-4 border-loss/30 hover:bg-loss/10 hover:border-loss transition-all duration-200 group disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <XCircle className="w-6 h-6 text-loss mx-auto mb-2 group-hover:scale-110 transition-transform" />
-                  <p className="text-sm font-display font-medium text-loss">REJECT</p>
+                  {loading[execution.id] ? (
+                    <Loader2 className="w-6 h-6 text-loss mx-auto mb-2 animate-spin" />
+                  ) : (
+                    <XCircle className="w-6 h-6 text-loss mx-auto mb-2 group-hover:scale-110 transition-transform" />
+                  )}
+                  <p className="text-sm font-display font-medium text-loss">
+                    {loading[execution.id] ? 'PROCESSING...' : 'REJECT'}
+                  </p>
                 </button>
                 <button
                   onClick={() => handleConfirm(execution.id, 'approve')}
-                  className="glass-card p-4 border-profit/30 hover:bg-profit/10 hover:border-profit transition-all duration-200 group"
+                  disabled={loading[execution.id]}
+                  className="glass-card p-4 border-profit/30 hover:bg-profit/10 hover:border-profit transition-all duration-200 group disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <CheckCircle className="w-6 h-6 text-profit mx-auto mb-2 group-hover:scale-110 transition-transform" />
-                  <p className="text-sm font-display font-medium text-profit">APPROVE</p>
+                  {loading[execution.id] ? (
+                    <Loader2 className="w-6 h-6 text-profit mx-auto mb-2 animate-spin" />
+                  ) : (
+                    <CheckCircle className="w-6 h-6 text-profit mx-auto mb-2 group-hover:scale-110 transition-transform" />
+                  )}
+                  <p className="text-sm font-display font-medium text-profit">
+                    {loading[execution.id] ? 'PROCESSING...' : 'APPROVE'}
+                  </p>
                 </button>
               </div>
 

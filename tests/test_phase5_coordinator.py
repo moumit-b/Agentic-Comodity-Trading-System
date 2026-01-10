@@ -136,6 +136,7 @@ class TestCoordinator:
             current_positions=0,
             daily_trades_count=0,
             consecutive_losses=3,  # Trip breaker
+            daily_pnl_pct=Decimal("0.0"),
         )
 
         assert decision.approved is False
@@ -150,6 +151,7 @@ class TestCoordinator:
             current_positions=0,
             daily_trades_count=0,
             consecutive_losses=0,
+            daily_pnl_pct=Decimal("0.0"),
         )
 
         # Should pass circuit breakers but have no signals

@@ -3,15 +3,19 @@
 import asyncio
 import json
 import logging
+import os
 from datetime import datetime
 from decimal import Decimal
-from typing import Set
+from typing import Dict, Set
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, status
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+# Load API key for WebSocket authentication
+DASHBOARD_API_KEY = os.getenv("DASHBOARD_API_KEY")
 
 
 class ConnectionManager:
@@ -20,16 +24,38 @@ class ConnectionManager:
     def __init__(self):
         """Initialize connection manager."""
         self.active_connections: Set[WebSocket] = set()
+        self.connections_per_ip: Dict[str, int] = {}  # Track connections per IP
+        self.max_connections_per_ip = 1  # Limit 1 connection per IP
 
-    async def connect(self, websocket: WebSocket):
-        """Accept new WebSocket connection."""
+    async def connect(self, websocket: WebSocket, client_ip: str):
+        """Accept new WebSocket connection with IP tracking."""
+        # Check connection limit per IP
+        current_connections = self.connections_per_ip.get(client_ip, 0)
+        if current_connections >= self.max_connections_per_ip:
+            logger.warning(f"Connection limit exceeded for IP: {client_ip}")
+            await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+            return False
+
         await websocket.accept()
         self.active_connections.add(websocket)
-        logger.info(f"Client connected. Total connections: {len(self.active_connections)}")
+        self.connections_per_ip[client_ip] = current_connections + 1
+        logger.info(
+            f"Client connected from {client_ip}. "
+            f"Total connections: {len(self.active_connections)}"
+        )
+        return True
 
-    def disconnect(self, websocket: WebSocket):
-        """Remove WebSocket connection."""
+    def disconnect(self, websocket: WebSocket, client_ip: str | None = None):
+        """Remove WebSocket connection and update IP tracking."""
         self.active_connections.discard(websocket)
+
+        if client_ip and client_ip in self.connections_per_ip:
+            self.connections_per_ip[client_ip] = max(
+                0, self.connections_per_ip[client_ip] - 1
+            )
+            if self.connections_per_ip[client_ip] == 0:
+                del self.connections_per_ip[client_ip]
+
         logger.info(f"Client disconnected. Total connections: {len(self.active_connections)}")
 
     async def broadcast(self, message: dict):
@@ -54,9 +80,9 @@ class ConnectionManager:
                 logger.error(f"Failed to send message to client: {e}")
                 disconnected.add(connection)
 
-        # Remove disconnected clients
+        # Remove disconnected clients (IP unknown in broadcast)
         for connection in disconnected:
-            self.disconnect(connection)
+            self.disconnect(connection, client_ip=None)
 
 
 # Global connection manager
@@ -64,9 +90,30 @@ manager = ConnectionManager()
 
 
 @router.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket):
-    """WebSocket endpoint for real-time updates."""
-    await manager.connect(websocket)
+async def websocket_endpoint(websocket: WebSocket, api_key: str | None = None):
+    """
+    WebSocket endpoint for real-time updates.
+
+    Requires API key in query parameter: /ws?api_key=YOUR_API_KEY
+    """
+    # Get client IP
+    client_ip = websocket.client.host if websocket.client else "unknown"
+
+    # Validate API key
+    if not DASHBOARD_API_KEY:
+        logger.error("DASHBOARD_API_KEY not configured")
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
+
+    if not api_key or api_key != DASHBOARD_API_KEY:
+        logger.warning(f"WebSocket connection rejected: Invalid API key from {client_ip}")
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
+
+    # Connect with IP tracking
+    connected = await manager.connect(websocket, client_ip)
+    if not connected:
+        return  # Connection was rejected due to limit
 
     try:
         # Send initial connection message
@@ -83,7 +130,7 @@ async def websocket_endpoint(websocket: WebSocket):
             try:
                 # Wait for messages from client (ping/pong, subscriptions, etc.)
                 data = await websocket.receive_text()
-                logger.debug(f"Received message from client: {data}")
+                logger.debug(f"Received message from client {client_ip}: {data}")
 
                 # Echo back for now (can add custom handlers)
                 await websocket.send_json(
@@ -96,13 +143,13 @@ async def websocket_endpoint(websocket: WebSocket):
             except WebSocketDisconnect:
                 break
             except Exception as e:
-                logger.error(f"WebSocket error: {e}")
+                logger.error(f"WebSocket error from {client_ip}: {e}")
                 break
 
     except Exception as e:
-        logger.error(f"WebSocket connection error: {e}")
+        logger.error(f"WebSocket connection error from {client_ip}: {e}")
     finally:
-        manager.disconnect(websocket)
+        manager.disconnect(websocket, client_ip)
 
 
 async def broadcast_account_update(balance: Decimal, buying_power: Decimal, market_open: bool):

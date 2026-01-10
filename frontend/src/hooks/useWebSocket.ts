@@ -1,8 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
-
-const WS_URL = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000/api/ws';
+import { apiClient } from '@/lib/api';
 
 export function useWebSocket() {
   const ws = useRef<WebSocket | null>(null);
@@ -14,7 +13,9 @@ export function useWebSocket() {
     if (ws.current?.readyState === WebSocket.OPEN) return;
 
     try {
-      ws.current = new WebSocket(WS_URL);
+      // Use apiClient to get WebSocket URL with API key
+      const wsUrl = apiClient.getWebSocketUrl();
+      ws.current = new WebSocket(wsUrl);
 
       ws.current.onopen = () => {
         console.log('WebSocket connected');

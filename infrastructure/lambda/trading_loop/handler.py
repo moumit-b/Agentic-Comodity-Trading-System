@@ -144,6 +144,15 @@ def lambda_handler(event, context):
         account_balance = Decimal(str(account.cash))
         logger.info(f"Account balance: ${account_balance:.2f}")
 
+        # Calculate daily P&L percentage
+        account_equity = Decimal(str(account.equity))
+        last_equity = Decimal(str(account.last_equity))
+        if last_equity > 0:
+            daily_pnl_pct = ((account_equity - last_equity) / last_equity) * 100
+        else:
+            daily_pnl_pct = Decimal("0.0")
+        logger.info(f"Daily P&L: {daily_pnl_pct:.2f}%")
+
         # Fetch current positions
         positions = alpaca_service.get_all_positions()
         current_positions = len(positions)
@@ -173,6 +182,7 @@ def lambda_handler(event, context):
                 current_positions=current_positions,
                 daily_trades_count=daily_trades_count,
                 consecutive_losses=consecutive_losses,
+                daily_pnl_pct=daily_pnl_pct,
             )
         )
 

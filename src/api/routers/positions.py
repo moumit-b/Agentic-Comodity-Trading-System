@@ -3,9 +3,12 @@
 import logging
 from decimal import Decimal
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from sqlalchemy import select
 
+from src.api.auth import verify_api_key
 from src.api.schemas.responses import PositionResponse
 from src.core.database import get_session
 from src.models.position import Position
@@ -13,10 +16,15 @@ from src.models.position import Position
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+limiter = Limiter(key_func=get_remote_address)
 
 
 @router.get("/positions", response_model=list[PositionResponse])
-async def get_positions():
+@limiter.limit("60/minute")
+async def get_positions(
+    request: Request,
+    _api_key: str = Depends(verify_api_key),
+):
     """Get all open positions."""
     try:
         async with get_session() as session:

@@ -16,10 +16,21 @@ export function PriceChart() {
   const [symbol, setSymbol] = useState('USO');
   const [timeframe, setTimeframe] = useState('1D');
 
+  // Map frontend timeframe values to Alpaca API format
+  const mapTimeframe = (tf: string): string => {
+    const map: Record<string, string> = {
+      '1H': '1Hour',
+      '4H': '4Hour',
+      '1D': '1Day',
+      '1W': '1Week',
+    };
+    return map[tf] || '1Day';
+  };
+
   const { data: bars, refetch: refetchBars } = useApi<Bar[]>(
-    () => apiClient.getBars(symbol, 390),
+    () => apiClient.getBars(symbol, 390, mapTimeframe(timeframe)),
     30000,
-    [symbol]
+    [symbol, timeframe]
   );
 
   const { data: indicators } = useApi<Indicator[]>(

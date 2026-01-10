@@ -120,6 +120,12 @@ resource "aws_lambda_function" "trading_loop" {
   timeout       = var.lambda_trading_loop_timeout
   memory_size   = var.lambda_trading_loop_memory
 
+  # Reserved concurrency to prevent runaway costs
+  # NOTE: Commented out because AWS requires at least 10 unreserved concurrent executions
+  # If you have other Lambdas or need unreserved capacity, leave this commented
+  # Otherwise, set to a lower value (e.g., 2) to allow headroom
+  # reserved_concurrent_executions = 5
+
   layers = [aws_lambda_layer_version.dependencies.arn]
 
   vpc_config {
@@ -161,6 +167,12 @@ resource "aws_lambda_function" "settlement" {
   runtime       = var.lambda_runtime
   timeout       = var.lambda_settlement_timeout
   memory_size   = var.lambda_settlement_memory
+
+  # Reserved concurrency to prevent runaway costs
+  # NOTE: Commented out because AWS requires at least 10 unreserved concurrent executions
+  # If you have other Lambdas or need unreserved capacity, leave this commented
+  # Otherwise, set to a lower value (e.g., 2) to allow headroom
+  # reserved_concurrent_executions = 5
 
   layers = [aws_lambda_layer_version.dependencies.arn]
 
@@ -249,11 +261,11 @@ resource "aws_lambda_function_url" "trading_loop" {
   authorization_type = "AWS_IAM" # Require IAM authentication
 
   cors {
-    allow_origins     = ["*"]
-    allow_methods     = ["POST"]
-    allow_headers     = ["*"]
-    expose_headers    = ["*"]
-    max_age           = 86400
+    allow_origins  = ["*"]
+    allow_methods  = ["POST"]
+    allow_headers  = ["*"]
+    expose_headers = ["*"]
+    max_age        = 86400
   }
 }
 
@@ -262,10 +274,10 @@ resource "aws_lambda_function_url" "settlement" {
   authorization_type = "AWS_IAM" # Require IAM authentication
 
   cors {
-    allow_origins     = ["*"]
-    allow_methods     = ["POST"]
-    allow_headers     = ["*"]
-    expose_headers    = ["*"]
-    max_age           = 86400
+    allow_origins  = ["*"]
+    allow_methods  = ["POST"]
+    allow_headers  = ["*"]
+    expose_headers = ["*"]
+    max_age        = 86400
   }
 }

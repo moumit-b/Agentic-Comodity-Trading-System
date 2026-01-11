@@ -112,7 +112,7 @@ variable "elasticache_num_cache_nodes" {
 variable "lambda_runtime" {
   description = "Lambda runtime for Python functions"
   type        = string
-  default     = "python3.11"
+  default     = "python3.13"
 }
 
 variable "lambda_trading_loop_memory" {

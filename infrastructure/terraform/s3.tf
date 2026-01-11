@@ -48,38 +48,41 @@ resource "aws_s3_bucket_lifecycle_configuration" "lambda_artifacts" {
   }
 }
 
-# Upload Lambda layer to S3
-resource "aws_s3_object" "lambda_layer" {
-  bucket = aws_s3_bucket.lambda_artifacts.id
-  key    = "layers/dependencies-${filemd5("${path.module}/../lambda/layer.zip")}.zip"
-  source = "${path.module}/../lambda/layer.zip"
-  etag   = filemd5("${path.module}/../lambda/layer.zip")
+# DEPRECATED: Lambda deployment now uses container images in ECR, not ZIP files in S3
+# Keeping S3 resources commented out for reference
 
-  tags = {
-    Name = "lambda-dependencies-layer"
-  }
-}
+# Upload Lambda layer to S3
+# resource "aws_s3_object" "lambda_layer" {
+#   bucket = aws_s3_bucket.lambda_artifacts.id
+#   key    = "layers/dependencies-${filemd5("${path.module}/../lambda/layer.zip")}.zip"
+#   source = "${path.module}/../lambda/layer.zip"
+#   etag   = filemd5("${path.module}/../lambda/layer.zip")
+#
+#   tags = {
+#     Name = "lambda-dependencies-layer"
+#   }
+# }
 
 # Upload trading loop function to S3
-resource "aws_s3_object" "trading_loop_function" {
-  bucket = aws_s3_bucket.lambda_artifacts.id
-  key    = "functions/trading_loop-${filemd5("${path.module}/../lambda/trading_loop.zip")}.zip"
-  source = "${path.module}/../lambda/trading_loop.zip"
-  etag   = filemd5("${path.module}/../lambda/trading_loop.zip")
-
-  tags = {
-    Name = "trading-loop-function"
-  }
-}
+# resource "aws_s3_object" "trading_loop_function" {
+#   bucket = aws_s3_bucket.lambda_artifacts.id
+#   key    = "functions/trading_loop-${filemd5("${path.module}/../lambda/trading_loop.zip")}.zip"
+#   source = "${path.module}/../lambda/trading_loop.zip"
+#   etag   = filemd5("${path.module}/../lambda/trading_loop.zip")
+#
+#   tags = {
+#     Name = "trading-loop-function"
+#   }
+# }
 
 # Upload settlement function to S3
-resource "aws_s3_object" "settlement_function" {
-  bucket = aws_s3_bucket.lambda_artifacts.id
-  key    = "functions/settlement-${filemd5("${path.module}/../lambda/settlement.zip")}.zip"
-  source = "${path.module}/../lambda/settlement.zip"
-  etag   = filemd5("${path.module}/../lambda/settlement.zip")
-
-  tags = {
-    Name = "settlement-function"
-  }
-}
+# resource "aws_s3_object" "settlement_function" {
+#   bucket = aws_s3_bucket.lambda_artifacts.id
+#   key    = "functions/settlement-${filemd5("${path.module}/../lambda/settlement.zip")}.zip"
+#   source = "${path.module}/../lambda/settlement.zip"
+#   etag   = filemd5("${path.module}/../lambda/settlement.zip")
+#
+#   tags = {
+#     Name = "settlement-function"
+#   }
+# }

@@ -119,6 +119,8 @@ frontend/build/
 .DS_Store
 Thumbs.db
 desktop.ini
+nul
+infrastructure/terraform/nul
 
 # ============================================================================
 # DATA AND LOGS

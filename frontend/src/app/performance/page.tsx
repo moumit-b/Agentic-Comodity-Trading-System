@@ -5,7 +5,7 @@ import { useApi } from '@/hooks/useApi';
 import { apiClient } from '@/lib/api';
 import { formatCurrency, formatPercent, formatDateTime } from '@/lib/utils';
 import { TrendingUp, TrendingDown, DollarSign, Target, Activity } from 'lucide-react';
-import { createChart, ColorType } from 'lightweight-charts';
+import { createChart, ColorType, UTCTimestamp } from 'lightweight-charts';
 
 export default function PerformancePage() {
   const chartContainerRef = useRef<HTMLDivElement>(null);
@@ -263,7 +263,7 @@ function generateEquityCurve(executions: any[]) {
   return sorted.map((e: any) => {
     cumulative += e.realized_pnl || 0;
     return {
-      time: new Date(e.executed_at).getTime() / 1000,
+      time: Math.floor(new Date(e.executed_at).getTime() / 1000) as UTCTimestamp,
       value: cumulative,
     };
   });

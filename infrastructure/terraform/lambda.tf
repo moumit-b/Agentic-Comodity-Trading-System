@@ -91,32 +91,29 @@ resource "aws_cloudwatch_log_group" "settlement" {
   }
 }
 
-# Lambda Layer for dependencies (shared between functions)
-# NOTE: This assumes you've built a layer zip with all dependencies
-# Build with: cd infrastructure/lambda && pip install -r requirements.txt -t python/lib/python3.11/site-packages/
-resource "aws_lambda_layer_version" "dependencies" {
-  s3_bucket           = aws_s3_bucket.lambda_artifacts.id
-  s3_key              = aws_s3_object.lambda_layer.key
-  layer_name          = "${var.project_name}-dependencies"
-  compatible_runtimes = [var.lambda_runtime]
+# Lambda Layer for dependencies (DEPRECATED - using container images instead)
+# Keeping for reference but no longer used
+# resource "aws_lambda_layer_version" "dependencies" {
+#   s3_bucket           = aws_s3_bucket.lambda_artifacts.id
+#   s3_key              = aws_s3_object.lambda_layer.key
+#   layer_name          = "${var.project_name}-dependencies"
+#   compatible_runtimes = [var.lambda_runtime, "python3.13"]
+#
+#   description = "Trading system dependencies (SQLAlchemy, Redis, Alpaca SDK, pandas-ta, etc.)"
+#
+#   lifecycle {
+#     create_before_destroy = true
+#   }
+#
+#   depends_on = [aws_s3_object.lambda_layer]
+# }
 
-  description = "Trading system dependencies (SQLAlchemy, Redis, Alpaca SDK, etc.)"
-
-  lifecycle {
-    create_before_destroy = true
-  }
-
-  depends_on = [aws_s3_object.lambda_layer]
-}
-
-# Trading Loop Lambda Function
+# Trading Loop Lambda Function (Container Image)
 resource "aws_lambda_function" "trading_loop" {
-  s3_bucket     = aws_s3_bucket.lambda_artifacts.id
-  s3_key        = aws_s3_object.trading_loop_function.key
   function_name = "${var.project_name}-trading-loop"
   role          = aws_iam_role.lambda.arn
-  handler       = "handler.lambda_handler"
-  runtime       = var.lambda_runtime
+  package_type  = "Image"
+  image_uri     = "${aws_ecr_repository.trading_lambda.repository_url}:trading-loop-latest"
   timeout       = var.lambda_trading_loop_timeout
   memory_size   = var.lambda_trading_loop_memory
 
@@ -125,8 +122,6 @@ resource "aws_lambda_function" "trading_loop" {
   # If you have other Lambdas or need unreserved capacity, leave this commented
   # Otherwise, set to a lower value (e.g., 2) to allow headroom
   # reserved_concurrent_executions = 5
-
-  layers = [aws_lambda_layer_version.dependencies.arn]
 
   vpc_config {
     subnet_ids         = aws_subnet.private[*].id
@@ -141,6 +136,9 @@ resource "aws_lambda_function" "trading_loop" {
       DATABASE_SECRET_NAME   = aws_secretsmanager_secret.rds_password.name
       REDIS_SECRET_NAME      = aws_secretsmanager_secret.redis.name
       DISCORD_SECRET_NAME    = aws_secretsmanager_secret.discord.name
+      # Numba/pandas-ta configuration for Lambda
+      NUMBA_CACHE_DIR        = "/tmp"
+      NUMBA_DISABLE_JIT      = "0"
     }
   }
 
@@ -157,14 +155,12 @@ resource "aws_lambda_function" "trading_loop" {
   ]
 }
 
-# Settlement Lambda Function
+# Settlement Lambda Function (Container Image)
 resource "aws_lambda_function" "settlement" {
-  s3_bucket     = aws_s3_bucket.lambda_artifacts.id
-  s3_key        = aws_s3_object.settlement_function.key
   function_name = "${var.project_name}-settlement"
   role          = aws_iam_role.lambda.arn
-  handler       = "handler.lambda_handler"
-  runtime       = var.lambda_runtime
+  package_type  = "Image"
+  image_uri     = "${aws_ecr_repository.trading_lambda.repository_url}:settlement-latest"
   timeout       = var.lambda_settlement_timeout
   memory_size   = var.lambda_settlement_memory
 
@@ -173,8 +169,6 @@ resource "aws_lambda_function" "settlement" {
   # If you have other Lambdas or need unreserved capacity, leave this commented
   # Otherwise, set to a lower value (e.g., 2) to allow headroom
   # reserved_concurrent_executions = 5
-
-  layers = [aws_lambda_layer_version.dependencies.arn]
 
   vpc_config {
     subnet_ids         = aws_subnet.private[*].id
@@ -189,6 +183,9 @@ resource "aws_lambda_function" "settlement" {
       DATABASE_SECRET_NAME   = aws_secretsmanager_secret.rds_password.name
       REDIS_SECRET_NAME      = aws_secretsmanager_secret.redis.name
       DISCORD_SECRET_NAME    = aws_secretsmanager_secret.discord.name
+      # Numba/pandas-ta configuration for Lambda
+      NUMBA_CACHE_DIR        = "/tmp"
+      NUMBA_DISABLE_JIT      = "0"
     }
   }
 

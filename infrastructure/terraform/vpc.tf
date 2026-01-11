@@ -132,6 +132,24 @@ resource "aws_security_group" "dashboard" {
     cidr_blocks = ["0.0.0.0/0"] # Restrict this in production
   }
 
+  # FastAPI backend port
+  ingress {
+    description = "FastAPI backend"
+    from_port   = 8000
+    to_port     = 8000
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"] # Restrict this in production
+  }
+
+  # Next.js frontend port
+  ingress {
+    description = "Next.js frontend"
+    from_port   = 3000
+    to_port     = 3000
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"] # Restrict this in production
+  }
+
   # SSH (only if allowed CIDRs are configured)
   dynamic "ingress" {
     for_each = length(var.ssh_allowed_cidr) > 0 ? [1] : []

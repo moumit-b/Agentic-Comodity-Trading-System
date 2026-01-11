@@ -1,0 +1,17 @@
+FROM public.ecr.aws/lambda/python:3.13
+
+# Install system dependencies for numba/llvmlite
+RUN dnf install -y gcc gcc-c++ llvm-devel && dnf clean all
+
+# Copy requirements and install dependencies
+COPY infrastructure/lambda/settlement/requirements.txt ${LAMBDA_TASK_ROOT}/
+RUN pip install --no-cache-dir -r ${LAMBDA_TASK_ROOT}/requirements.txt
+
+# Copy trading loop handler
+COPY infrastructure/lambda/trading_loop/handler.py ${LAMBDA_TASK_ROOT}/
+
+# Copy source code from project root
+COPY src ${LAMBDA_TASK_ROOT}/src/
+
+# Set the handler
+CMD ["handler.lambda_handler"]

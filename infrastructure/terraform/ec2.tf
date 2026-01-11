@@ -88,6 +88,12 @@ resource "aws_iam_role_policy_attachment" "dashboard_cloudwatch" {
   policy_arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
 }
 
+# Attach SSM policy for Session Manager access
+resource "aws_iam_role_policy_attachment" "dashboard_ssm" {
+  role       = aws_iam_role.dashboard.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
 # Instance Profile
 resource "aws_iam_instance_profile" "dashboard" {
   name = "${var.project_name}-dashboard-profile"
@@ -233,6 +239,7 @@ resource "aws_instance" "dashboard" {
   subnet_id              = aws_subnet.public[0].id
   vpc_security_group_ids = [aws_security_group.dashboard.id]
   iam_instance_profile   = aws_iam_instance_profile.dashboard.name
+  key_name               = "trading-system-key"  # SSH key pair name
 
   root_block_device {
     volume_type           = "gp3"

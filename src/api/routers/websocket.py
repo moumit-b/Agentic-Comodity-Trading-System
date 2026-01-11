@@ -25,7 +25,7 @@ class ConnectionManager:
         """Initialize connection manager."""
         self.active_connections: Set[WebSocket] = set()
         self.connections_per_ip: Dict[str, int] = {}  # Track connections per IP
-        self.max_connections_per_ip = 1  # Limit 1 connection per IP
+        self.max_connections_per_ip = 10  # Allow multiple connections per IP for dashboard
 
     async def connect(self, websocket: WebSocket, client_ip: str):
         """Accept new WebSocket connection with IP tracking."""

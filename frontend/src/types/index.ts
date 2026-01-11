@@ -34,6 +34,7 @@ export interface Signal {
   suggested_stop: number;
   suggested_target: number;
   decision?: 'APPROVED' | 'REJECTED' | 'PENDING';
+  decision_reason?: string;
 }
 
 export interface Execution {

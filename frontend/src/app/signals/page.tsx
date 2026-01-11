@@ -162,7 +162,7 @@ export default function SignalsPage() {
                   </div>
                   <div className="text-sm font-mono mt-1">{formatPercent(signal.confidence)}</div>
                   <div className="text-xs text-terminal-text-secondary mt-2">
-                    {formatDateTime(signal.generated_at)}
+                    {formatDateTime(signal.timestamp)}
                   </div>
                 </div>
 

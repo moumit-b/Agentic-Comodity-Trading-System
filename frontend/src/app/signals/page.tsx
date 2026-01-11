@@ -8,7 +8,7 @@ import { TrendingUp, TrendingDown, Filter, Radio } from 'lucide-react';
 import type { Signal } from '@/types';
 
 export default function SignalsPage() {
-  const { data: signals } = useApi(() => apiClient.getSignals(200), 10000);
+  const { data: signals } = useApi(() => apiClient.getSignals({ limit: 200 }), 10000);
   const [strategyFilter, setStrategyFilter] = useState<string>('ALL');
   const [directionFilter, setDirectionFilter] = useState<string>('ALL');
   const [decisionFilter, setDecisionFilter] = useState<string>('ALL');

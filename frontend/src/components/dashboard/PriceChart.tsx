@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { createChart, ColorType, IChartApi, ISeriesApi } from 'lightweight-charts';
+import { createChart, ColorType, IChartApi, ISeriesApi, UTCTimestamp } from 'lightweight-charts';
 import { useApi } from '@/hooks/useApi';
 import { apiClient } from '@/lib/api';
 import { ChevronDown } from 'lucide-react';
@@ -109,7 +109,7 @@ export function PriceChart() {
     if (!bars || !candlestickSeriesRef.current || !volumeSeriesRef.current) return;
 
     const candleData = bars.map((bar) => ({
-      time: new Date(bar.timestamp).getTime() / 1000,
+      time: (new Date(bar.timestamp).getTime() / 1000) as UTCTimestamp,
       open: Number(bar.open),
       high: Number(bar.high),
       low: Number(bar.low),
@@ -117,7 +117,7 @@ export function PriceChart() {
     }));
 
     const volumeData = bars.map((bar) => ({
-      time: new Date(bar.timestamp).getTime() / 1000,
+      time: (new Date(bar.timestamp).getTime() / 1000) as UTCTimestamp,
       value: Number(bar.volume),
       color: Number(bar.close) >= Number(bar.open) ? 'rgba(177,255,194,0.3)' : 'rgba(248,113,113,0.3)',
     }));

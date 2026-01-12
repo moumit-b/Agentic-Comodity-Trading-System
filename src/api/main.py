@@ -14,8 +14,8 @@ from src.core.database import init_db
 
 logger = logging.getLogger(__name__)
 
-# Initialize rate limiter
-limiter = Limiter(key_func=get_remote_address)
+# Initialize rate limiter - increased for dashboard polling
+limiter = Limiter(key_func=get_remote_address, default_limits=["300/minute"])
 
 
 @asynccontextmanager

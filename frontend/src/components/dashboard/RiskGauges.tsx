@@ -9,7 +9,7 @@ import type { RiskMetrics } from '@/types';
 
 export function RiskGauges() {
   const { on, off } = useWebSocket();
-  const { data: riskMetrics, refetch } = useApi<RiskMetrics>(() => apiClient.getRiskMetrics(), 5000);
+  const { data: riskMetrics, refetch } = useApi<RiskMetrics>(() => apiClient.getRiskMetrics(), 30000);
 
   useEffect(() => {
     on('risk_update', (data) => {

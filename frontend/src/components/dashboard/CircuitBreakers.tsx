@@ -10,7 +10,7 @@ import type { CircuitBreaker } from '@/types';
 
 export function CircuitBreakers() {
   const { on, off } = useWebSocket();
-  const { data: breakers, refetch } = useApi<CircuitBreaker[]>(() => apiClient.getCircuitBreakers(), 5000);
+  const { data: breakers, refetch } = useApi<CircuitBreaker[]>(() => apiClient.getCircuitBreakers(), 30000);
 
   useEffect(() => {
     on('circuit_breaker', (data) => {

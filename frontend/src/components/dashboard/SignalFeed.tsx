@@ -10,7 +10,7 @@ import type { Signal } from '@/types';
 
 export function SignalFeed() {
   const { on, off } = useWebSocket();
-  const { data: signals, refetch } = useApi<Signal[]>(() => apiClient.getSignals({ limit: 50 }), 5000);
+  const { data: signals, refetch } = useApi<Signal[]>(() => apiClient.getSignals({ limit: 50 }), 30000);
   const [filteredSignals, setFilteredSignals] = useState<Signal[]>([]);
   const [strategyFilter, setStrategyFilter] = useState('All');
   const [directionFilter, setDirectionFilter] = useState('All');

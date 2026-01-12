@@ -9,8 +9,8 @@ import { Shield, AlertTriangle, TrendingDown, Activity } from 'lucide-react';
 
 export default function RiskPage() {
   const { isConnected, on, off } = useWebSocket();
-  const { data: riskMetrics, refetch } = useApi(() => apiClient.getRiskMetrics(), 5000);
-  const { data: positions } = useApi(() => apiClient.getPositions(), 5000);
+  const { data: riskMetrics, refetch } = useApi(() => apiClient.getRiskMetrics(), 30000);
+  const { data: positions } = useApi(() => apiClient.getPositions(), 30000);
 
   useEffect(() => {
     on('risk_update', () => refetch());

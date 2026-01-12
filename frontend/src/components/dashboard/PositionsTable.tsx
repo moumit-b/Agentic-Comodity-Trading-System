@@ -10,7 +10,7 @@ import type { Position } from '@/types';
 
 export function PositionsTable() {
   const { on, off } = useWebSocket();
-  const { data: positions, refetch } = useApi<Position[]>(() => apiClient.getPositions(), 5000);
+  const { data: positions, refetch } = useApi<Position[]>(() => apiClient.getPositions(), 30000);
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
 
   useEffect(() => {

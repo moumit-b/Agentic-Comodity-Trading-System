@@ -10,7 +10,7 @@ import type { AccountStatus } from '@/types';
 
 export function SystemStatus() {
   const { isConnected, on, off } = useWebSocket();
-  const { data: account, refetch } = useApi<AccountStatus>(() => apiClient.getAccount(), 5000);
+  const { data: account, refetch } = useApi<AccountStatus>(() => apiClient.getAccount(), 30000);
   const [showKillSwitchModal, setShowKillSwitchModal] = useState(false);
   const [mode, setMode] = useState('ADVISORY');
 

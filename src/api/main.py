@@ -52,6 +52,7 @@ app.add_middleware(
         "http://localhost:3000",  # Next.js dev
         "http://localhost:3001",  # Next.js alt port
         "http://frontend:3000",   # Docker
+        "http://54.165.149.26:3000",  # EC2 public IP
     ],
     allow_credentials=True,
     allow_methods=["*"],

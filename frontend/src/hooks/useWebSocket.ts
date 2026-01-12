@@ -74,7 +74,8 @@ export function useWebSocket() {
     return () => {
       disconnect();
     };
-  }, [connect, disconnect]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
 
   return { isConnected, on, off };
 }

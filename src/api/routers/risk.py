@@ -25,7 +25,6 @@ limiter = Limiter(key_func=get_remote_address)
 
 
 @router.get("/risk/metrics", response_model=RiskMetricsResponse)
-@limiter.limit("60/minute")
 async def get_risk_metrics(
     request: Request,
     _api_key: str = Depends(verify_api_key),
@@ -77,7 +76,6 @@ async def get_risk_metrics(
 
 
 @router.get("/bars/{symbol}", response_model=list[BarResponse])
-@limiter.limit("60/minute")
 async def get_bars(
     request: Request,
     symbol: str = "",
@@ -114,7 +112,6 @@ async def get_bars(
 
 
 @router.get("/indicators/{symbol}", response_model=list[IndicatorResponse])
-@limiter.limit("60/minute")
 async def get_indicators(
     request: Request,
     symbol: str = "",

@@ -29,7 +29,6 @@ class KillSwitchRequest(BaseModel):
 
 
 @router.get("/circuit-breakers", response_model=list[CircuitBreakerResponse])
-@limiter.limit("60/minute")
 async def get_circuit_breakers(
     request: Request,
     _api_key: str = Depends(verify_api_key),
@@ -116,7 +115,6 @@ async def manage_kill_switch(
 
 
 @router.get("/circuit-breakers/status")
-@limiter.limit("60/minute")
 async def get_breaker_status(
     request: Request,
     _api_key: str = Depends(verify_api_key),

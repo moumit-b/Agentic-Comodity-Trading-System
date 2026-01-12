@@ -20,7 +20,6 @@ limiter = Limiter(key_func=get_remote_address)
 
 
 @router.get("/positions", response_model=list[PositionResponse])
-@limiter.limit("60/minute")
 async def get_positions(
     request: Request,
     _api_key: str = Depends(verify_api_key),

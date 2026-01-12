@@ -27,7 +27,6 @@ class ConfirmationRequest(BaseModel):
 
 
 @router.get("/executions", response_model=list[ExecutionResponse])
-@limiter.limit("60/minute")
 async def get_executions(
     request: Request,
     limit: int = Query(50, ge=1, le=1000, description="Number of executions to return"),
@@ -60,7 +59,6 @@ async def get_executions(
 
 
 @router.get("/executions/pending", response_model=list[ExecutionResponse])
-@limiter.limit("60/minute")
 async def get_pending_confirmations(
     request: Request,
     _api_key: str = Depends(verify_api_key),

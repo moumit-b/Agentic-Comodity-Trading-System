@@ -20,7 +20,6 @@ limiter = Limiter(key_func=get_remote_address)
 
 
 @router.get("/signals", response_model=list[SignalResponse])
-@limiter.limit("60/minute")
 async def get_signals(
     request: Request,
     limit: int = Query(50, ge=1, le=1000, description="Number of signals to return"),
@@ -74,7 +73,6 @@ async def get_signals(
 
 
 @router.get("/decisions", response_model=list[DecisionResponse])
-@limiter.limit("60/minute")
 async def get_decisions(
     request: Request,
     limit: int = Query(100, ge=1, le=1000, description="Number of decisions to return"),

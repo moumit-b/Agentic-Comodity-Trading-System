@@ -92,6 +92,7 @@ from src.api.routers import (
     circuit_breakers,
     configuration,
     executions,
+    market_data,
     positions,
     risk,
     signals,
@@ -101,6 +102,7 @@ from src.api.routers import (
 # Include routers
 app.include_router(account.router, prefix="/api", tags=["account"])
 app.include_router(positions.router, prefix="/api", tags=["positions"])
+app.include_router(market_data.router, prefix="/api", tags=["market-data"])
 app.include_router(signals.router, prefix="/api", tags=["signals"])
 app.include_router(executions.router, prefix="/api", tags=["executions"])
 app.include_router(circuit_breakers.router, prefix="/api", tags=["circuit-breakers"])

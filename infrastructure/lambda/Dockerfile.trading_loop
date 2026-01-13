@@ -4,7 +4,7 @@ FROM public.ecr.aws/lambda/python:3.13
 RUN dnf install -y gcc gcc-c++ llvm-devel && dnf clean all
 
 # Copy requirements and install dependencies
-COPY infrastructure/lambda/settlement/requirements.txt ${LAMBDA_TASK_ROOT}/
+COPY infrastructure/lambda/trading_loop/requirements.txt ${LAMBDA_TASK_ROOT}/
 RUN pip install --no-cache-dir -r ${LAMBDA_TASK_ROOT}/requirements.txt
 
 # Copy trading loop handler

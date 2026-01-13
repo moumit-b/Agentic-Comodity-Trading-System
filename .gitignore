@@ -151,3 +151,15 @@ infrastructure/lambda/settlement_package/
 # ============================================================================
 
 scripts/verify_*.py
+
+# Miscellaneous
+AWS_COST_ESTIMATE.md
+DEPLOYMENT_DIAGNOSIS.md
+eventbridge-policy.json
+eventbridge-trust.json
+INSTANCE_SCHEDULER_SETUP.md
+setup_scheduler.bat
+start_instances.py
+start_instances.zip
+stop_instances.py
+stop_instances.zip

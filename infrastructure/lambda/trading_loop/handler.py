@@ -73,12 +73,13 @@ def lambda_handler(event, context):
         os.environ["ALPACA_API_SECRET"] = alpaca_creds["api_secret"]
         os.environ["ALPACA_IS_PAPER"] = str(alpaca_creds.get("paper", True))
 
-        # Construct database URL
-        db_url = (
-            f"postgresql+asyncpg://{db_creds['username']}:{db_creds['password']}"
-            f"@{db_creds['host']}:{db_creds['port']}/{db_creds['database']}"
-        )
-        os.environ["DATABASE_URL"] = db_url
+        # Set database connection vars for DatabaseConfig (Pydantic)
+        # DatabaseConfig reads DB_HOST, DB_USER etc, not DATABASE_URL directly
+        os.environ["DB_HOST"] = db_creds["host"]
+        os.environ["DB_USER"] = db_creds["username"]
+        os.environ["DB_PASSWORD"] = db_creds["password"]
+        os.environ["DB_PORT"] = str(db_creds["port"])
+        os.environ["DB_NAME"] = db_creds["database"]
 
         # Set Redis connection
         os.environ["REDIS_HOST"] = redis_creds["host"]
@@ -126,11 +127,18 @@ def lambda_handler(event, context):
         settlement_tracker = SettlementTrackerAgent()
         execution_agent = ExecutionAgent(config, mode=config.automation_mode)
         
-        # Initialize market data agent for fetching bars
+        # Initialize market data agent for fetching bars (Bypass Redis connection)
         from src.agents.market_data import MarketDataAgent
         from src.core.config import RedisConfig
+        from alpaca.data.historical import StockHistoricalDataClient
+        
         redis_config = RedisConfig()
         market_data_agent = MarketDataAgent(alpaca_config, redis_config)
+        # Manually init historical client, skipping Redis connection
+        market_data_agent._historical_client = StockHistoricalDataClient(
+            api_key=alpaca_config.api_key.get_secret_value(),
+            secret_key=alpaca_config.api_secret.get_secret_value(),
+        )
         
         # Initialize coordinator
         logger.info("Initializing coordinator agent...")
@@ -147,8 +155,7 @@ def lambda_handler(event, context):
 
         # Define async function for fetching account data and running trading cycle
         async def run_trading_cycle_async():
-            # Connect to market data services
-            await market_data_agent.connect()
+            # Skip market_data_agent.connect() to avoid Redis/VPC timeout
             
             # Fetch account information
             logger.info("Fetching account information...")
@@ -267,7 +274,7 @@ def lambda_handler(event, context):
                     results[symbol] = {"error": str(e)}
 
             # Disconnect
-            await market_data_agent.disconnect()
+            # await market_data_agent.disconnect() # Don't disconnect since we didn't connect to Redis
 
             # Log results
             end_time = datetime.utcnow()

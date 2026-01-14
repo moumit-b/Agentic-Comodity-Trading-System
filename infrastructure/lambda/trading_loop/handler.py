@@ -125,7 +125,13 @@ def lambda_handler(event, context):
         risk_manager = RiskManagerAgent(config)
         settlement_tracker = SettlementTrackerAgent()
         execution_agent = ExecutionAgent(config, mode=config.automation_mode)
-
+        
+        # Initialize market data agent for fetching bars
+        from src.agents.market_data import MarketDataAgent
+        from src.core.config import RedisConfig
+        redis_config = RedisConfig()
+        market_data_agent = MarketDataAgent(alpaca_config, redis_config)
+        
         # Initialize coordinator
         logger.info("Initializing coordinator agent...")
         coordinator = CoordinatorAgent(
@@ -141,6 +147,9 @@ def lambda_handler(event, context):
 
         # Define async function for fetching account data and running trading cycle
         async def run_trading_cycle_async():
+            # Connect to market data services
+            await market_data_agent.connect()
+            
             # Fetch account information
             logger.info("Fetching account information...")
             account = await alpaca_service.get_account()
@@ -175,17 +184,9 @@ def lambda_handler(event, context):
                 }
             logger.info("Market is open, proceeding with trading cycle")
 
-            # Prepare market data (coordinator will fetch bars internally)
-            symbol = "USO"
-            logger.info(f"Trading symbol: {symbol}")
-            market_data = {
-                "symbol": symbol,
-                "bars": [],  # Coordinator will fetch bars
-            }
-
             # Get daily trades count and consecutive losses from database
             logger.info("Fetching daily trading statistics...")
-            from datetime import date
+            from datetime import date, timedelta
             from sqlalchemy import select, func
             from src.models.execution import Execution
             from src.models.account import DailyLimit
@@ -210,23 +211,79 @@ def lambda_handler(event, context):
 
             logger.info(f"Daily stats: trades={daily_trades_count}, consecutive_losses={consecutive_losses}")
 
-            logger.info("Running trading cycle...")
-            result = await coordinator.run_trading_cycle(
-                market_data=market_data,
-                account_balance=account_balance,
-                current_positions=current_positions,
-                daily_trades_count=daily_trades_count,
-                consecutive_losses=consecutive_losses,
-                daily_pnl_pct=daily_pnl_pct,
-            )
+            # Process each symbol
+            results = {}
+            symbols = config.symbols # Default: ["USO", "UNG"]
+            
+            for symbol in symbols:
+                logger.info(f"Processing symbol: {symbol}")
+                try:
+                    # Fetch historical bars (last 200 minutes to ensure enough for indicators)
+                    end = datetime.utcnow()
+                    start = end - timedelta(minutes=200)
+                    
+                    # We need the raw objects, not DF, for Coordinator compatibility
+                    # Using internal client directly to get Bar objects
+                    from alpaca.data.requests import StockBarsRequest
+                    from alpaca.data.timeframe import TimeFrame, TimeFrameUnit
+                    
+                    request = StockBarsRequest(
+                        symbol_or_symbols=symbol,
+                        timeframe=TimeFrame(1, TimeFrameUnit.Minute),
+                        start=start,
+                        end=end,
+                    )
+                    
+                    # Use the client from market_data_agent
+                    if not market_data_agent._historical_client:
+                        logger.error("Historical client not initialized")
+                        continue
+                        
+                    bars_response = market_data_agent._historical_client.get_stock_bars(request)
+                    bars_list = bars_response[symbol] if symbol in bars_response else []
+                    
+                    if not bars_list:
+                        logger.warning(f"No bars found for {symbol}")
+                        continue
+                        
+                    market_data = {
+                        "symbol": symbol,
+                        "bars": {symbol: bars_list},
+                    }
+
+                    logger.info(f"Running trading cycle for {symbol}...")
+                    result = await coordinator.run_trading_cycle(
+                        market_data=market_data,
+                        account_balance=account_balance,
+                        current_positions=current_positions,
+                        daily_trades_count=daily_trades_count,
+                        consecutive_losses=consecutive_losses,
+                        daily_pnl_pct=daily_pnl_pct,
+                    )
+                    results[symbol] = result
+                    
+                except Exception as e:
+                    logger.error(f"Error processing {symbol}: {e}", exc_info=True)
+                    results[symbol] = {"error": str(e)}
+
+            # Disconnect
+            await market_data_agent.disconnect()
 
             # Log results
             end_time = datetime.utcnow()
             duration = (end_time - start_time).total_seconds()
 
+            # Serialize results safely
+            def json_serial(obj):
+                if isinstance(obj, (datetime, date)):
+                    return obj.isoformat()
+                if isinstance(obj, Decimal):
+                    return str(obj)
+                return str(obj)
+
             logger.info("-" * 80)
             logger.info(f"Trading cycle completed in {duration:.2f}s")
-            logger.info(f"Result: {json.dumps(result, indent=2)}")
+            # logger.info(f"Result: {json.dumps(results, indent=2, default=json_serial)}")
             logger.info("=" * 80)
 
             return {
@@ -239,8 +296,8 @@ def lambda_handler(event, context):
                         "end_time": end_time.isoformat(),
                         "duration_seconds": duration,
                         "environment": environment,
-                        "result": result,
-                    }
+                        "results_count": len(results),
+                    }, default=json_serial
                 ),
             }
 

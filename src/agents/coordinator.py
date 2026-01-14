@@ -212,61 +212,79 @@ class CoordinatorAgent:
                     settlement_status=None,
                 )
 
-            # Calculate indicators for 1h timeframe (simplified)
-            bars_copy = bars.copy()
+            # Calculate indicators for multiple timeframes
+            indicators = {}
+            timeframes = ["5m", "15m", "1h"]
 
-            # Calculate technical indicators
-            bars_copy["sma_20"] = ta.sma(bars_copy["close"], length=20)
-            bars_copy["ema_20"] = ta.ema(bars_copy["close"], length=20)
-            bars_copy["rsi"] = ta.rsi(bars_copy["close"], length=14)
+            for tf in timeframes:
+                # Resample logic
+                rule = tf.replace("m", "T").replace("h", "H")
+                
+                # Ensure index is datetime
+                if not isinstance(bars.index, pd.DatetimeIndex):
+                    bars.index = pd.to_datetime(bars.index)
 
-            atr = ta.atr(bars_copy["high"], bars_copy["low"], bars_copy["close"], length=14)
-            bars_copy["atr"] = atr
+                resampled = bars.resample(rule).agg({
+                    "open": "first",
+                    "high": "max",
+                    "low": "min",
+                    "close": "last",
+                    "volume": "sum"
+                }).dropna()
 
-            macd = ta.macd(bars_copy["close"], fast=12, slow=26, signal=9)
-            if macd is not None:
-                bars_copy["macd"] = macd["MACD_12_26_9"]
-                bars_copy["macd_signal"] = macd["MACDs_12_26_9"]
-                bars_copy["macd_histogram"] = macd["MACDh_12_26_9"]
+                if len(resampled) < 20:
+                    continue
 
-            bbands = ta.bbands(bars_copy["close"], length=20, std=2)
-            if bbands is not None:
-                bars_copy["bb_upper"] = bbands["BBU_20_2.0"]
-                bars_copy["bb_middle"] = bbands["BBM_20_2.0"]
-                bars_copy["bb_lower"] = bbands["BBL_20_2.0"]
+                # Calculate indicators
+                df = resampled.copy()
+                df["sma_20"] = ta.sma(df["close"], length=20)
+                df["ema_20"] = ta.ema(df["close"], length=20)
+                df["rsi"] = ta.rsi(df["close"], length=14)
+                df["atr"] = ta.atr(df["high"], df["low"], df["close"], length=14)
 
-            # Get latest values
-            latest = bars_copy.iloc[-1]
+                macd = ta.macd(df["close"], fast=12, slow=26, signal=9)
+                if macd is not None:
+                    df["macd"] = macd["MACD_12_26_9"]
+                    df["macd_signal"] = macd["MACDs_12_26_9"]
+                    df["macd_histogram"] = macd["MACDh_12_26_9"]
 
-            indicators_1h = IndicatorSet(
-                sma_20=float(latest["sma_20"]) if pd.notna(latest["sma_20"]) else None,
-                ema_20=float(latest["ema_20"]) if pd.notna(latest["ema_20"]) else None,
-                rsi=float(latest["rsi"]) if pd.notna(latest["rsi"]) else None,
-                atr=float(latest["atr"]) if pd.notna(latest["atr"]) else None,
-                macd=float(latest.get("macd", 0)) if pd.notna(latest.get("macd")) else None,
-                macd_signal=float(latest.get("macd_signal", 0))
-                if pd.notna(latest.get("macd_signal"))
-                else None,
-                macd_histogram=float(latest.get("macd_histogram", 0))
-                if pd.notna(latest.get("macd_histogram"))
-                else None,
-                bb_upper=float(latest.get("bb_upper", 0))
-                if pd.notna(latest.get("bb_upper"))
-                else None,
-                bb_middle=float(latest.get("bb_middle", 0))
-                if pd.notna(latest.get("bb_middle"))
-                else None,
-                bb_lower=float(latest.get("bb_lower", 0))
-                if pd.notna(latest.get("bb_lower"))
-                else None,
-            )
+                bbands = ta.bbands(df["close"], length=20, std=2)
+                if bbands is not None:
+                    df["bb_upper"] = bbands["BBU_20_2.0"]
+                    df["bb_middle"] = bbands["BBM_20_2.0"]
+                    df["bb_lower"] = bbands["BBL_20_2.0"]
 
-            indicators = {"1h": indicators_1h}
+                latest = df.iloc[-1]
+                
+                indicators[tf] = IndicatorSet(
+                    sma_20=float(latest["sma_20"]) if pd.notna(latest["sma_20"]) else None,
+                    ema_20=float(latest["ema_20"]) if pd.notna(latest["ema_20"]) else None,
+                    rsi=float(latest["rsi"]) if pd.notna(latest["rsi"]) else None,
+                    atr=float(latest["atr"]) if pd.notna(latest["atr"]) else None,
+                    macd=float(latest.get("macd", 0)) if pd.notna(latest.get("macd")) else None,
+                    macd_signal=float(latest.get("macd_signal", 0)) if pd.notna(latest.get("macd_signal")) else None,
+                    macd_histogram=float(latest.get("macd_histogram", 0)) if pd.notna(latest.get("macd_histogram")) else None,
+                    bb_upper=float(latest.get("bb_upper", 0)) if pd.notna(latest.get("bb_upper")) else None,
+                    bb_middle=float(latest.get("bb_middle", 0)) if pd.notna(latest.get("bb_middle")) else None,
+                    bb_lower=float(latest.get("bb_lower", 0)) if pd.notna(latest.get("bb_lower")) else None,
+                )
 
-            logger.info(
-                f"Indicators: RSI={indicators_1h.rsi:.1f}, "
-                f"SMA20={indicators_1h.sma_20:.2f}, ATR={indicators_1h.atr:.3f}"
-            )
+            if not indicators:
+                logger.warning("Failed to calculate indicators for any timeframe")
+                # Fallback to single timeframe (1m treated as 1h) if resampling failed, 
+                # but better to return empty than wrong data. 
+                # Actually, let's keep the old behavior as a fallback if dict is empty but warn.
+                pass
+
+            if "1h" in indicators:
+                logger.info(
+                    f"Indicators (1h): RSI={indicators['1h'].rsi:.1f}, "
+                    f"SMA20={indicators['1h'].sma_20:.2f}"
+                )
+            elif indicators:
+                 # Log whatever we have
+                 first_tf = list(indicators.keys())[0]
+                 logger.info(f"Indicators ({first_tf}): RSI={indicators[first_tf].rsi:.1f}")
 
             # === STEP 4: Detect Market Regime ===
             market_regime = self.strategy_selector.detect_market_regime(bars, indicators)

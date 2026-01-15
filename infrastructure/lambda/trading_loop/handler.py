@@ -226,7 +226,8 @@ def lambda_handler(event, context):
                 logger.info(f"Processing symbol: {symbol}")
                 try:
                     # Fetch historical bars (last 200 minutes to ensure enough for indicators)
-                    end = datetime.utcnow()
+                    # Use 20-minute delay to support Free Tier keys (SIP data restriction)
+                    end = datetime.utcnow() - timedelta(minutes=20)
                     start = end - timedelta(minutes=200)
                     
                     # We need the raw objects, not DF, for Coordinator compatibility

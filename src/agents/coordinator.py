@@ -218,7 +218,7 @@ class CoordinatorAgent:
 
             for tf in timeframes:
                 # Resample logic
-                rule = tf.replace("m", "T").replace("h", "H")
+                rule = tf.replace("m", "min").replace("h", "H")
                 
                 # Ensure index is datetime
                 if not isinstance(bars.index, pd.DatetimeIndex):
@@ -249,14 +249,22 @@ class CoordinatorAgent:
                     df["macd_histogram"] = macd["MACDh_12_26_9"]
 
                 bbands = ta.bbands(df["close"], length=20, std=2)
-                if bbands is not None:
-                    df["bb_upper"] = bbands["BBU_20_2.0"]
-                    df["bb_middle"] = bbands["BBM_20_2.0"]
-                    df["bb_lower"] = bbands["BBL_20_2.0"]
+                if bbands is not None and not bbands.empty:
+                    # Dynamically find columns to handle naming variations
+                    # e.g., BBU_20_2.0 vs BBU_20_2
+                    upper_col = next((c for c in bbands.columns if c.startswith("BBU")), None)
+                    mid_col = next((c for c in bbands.columns if c.startswith("BBM")), None)
+                    lower_col = next((c for c in bbands.columns if c.startswith("BBL")), None)
+                    
+                    if upper_col and mid_col and lower_col:
+                        df["bb_upper"] = bbands[upper_col]
+                        df["bb_middle"] = bbands[mid_col]
+                        df["bb_lower"] = bbands[lower_col]
 
                 latest = df.iloc[-1]
                 
                 indicators[tf] = IndicatorSet(
+                    timeframe=tf,
                     sma_20=float(latest["sma_20"]) if pd.notna(latest["sma_20"]) else None,
                     ema_20=float(latest["ema_20"]) if pd.notna(latest["ema_20"]) else None,
                     rsi=float(latest["rsi"]) if pd.notna(latest["rsi"]) else None,

@@ -16,13 +16,9 @@ export function SignalFeed() {
   const [directionFilter, setDirectionFilter] = useState('All');
 
   useEffect(() => {
-    on('signal_new', (data) => {
-      refetch();
-    });
-
-    return () => {
-      off('signal_new');
-    };
+    const handler = () => refetch();
+    on('signal_new', handler);
+    return () => off('signal_new', handler);
   }, [on, off, refetch]);
 
   useEffect(() => {

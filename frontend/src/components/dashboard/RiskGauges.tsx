@@ -12,13 +12,9 @@ export function RiskGauges() {
   const { data: riskMetrics, refetch } = useApi<RiskMetrics>(() => apiClient.getRiskMetrics(), 30000);
 
   useEffect(() => {
-    on('risk_update', (data) => {
-      refetch();
-    });
-
-    return () => {
-      off('risk_update');
-    };
+    const handler = () => refetch();
+    on('risk_update', handler);
+    return () => off('risk_update', handler);
   }, [on, off, refetch]);
 
   const getGaugeColor = (value: number, thresholds: { green: number; yellow: number }) => {

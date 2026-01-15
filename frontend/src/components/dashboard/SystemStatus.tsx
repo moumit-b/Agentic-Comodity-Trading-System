@@ -15,17 +15,15 @@ export function SystemStatus() {
   const [mode, setMode] = useState('ADVISORY');
 
   useEffect(() => {
-    on('account_update', (data) => {
-      refetch();
-    });
+    const handleAccountUpdate = () => refetch();
+    const handleMarketStatus = () => refetch();
 
-    on('market_status', (data) => {
-      refetch();
-    });
+    on('account_update', handleAccountUpdate);
+    on('market_status', handleMarketStatus);
 
     return () => {
-      off('account_update');
-      off('market_status');
+      off('account_update', handleAccountUpdate);
+      off('market_status', handleMarketStatus);
     };
   }, [on, off, refetch]);
 

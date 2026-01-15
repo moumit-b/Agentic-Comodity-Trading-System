@@ -13,8 +13,9 @@ export default function RiskPage() {
   const { data: positions } = useApi(() => apiClient.getPositions(), 30000);
 
   useEffect(() => {
-    on('risk_update', () => refetch());
-    return () => off('risk_update');
+    const handler = () => refetch();
+    on('risk_update', handler);
+    return () => off('risk_update', handler);
   }, [on, off, refetch]);
 
   if (!riskMetrics) {

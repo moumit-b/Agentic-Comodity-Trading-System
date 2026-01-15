@@ -14,13 +14,9 @@ export function PositionsTable() {
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
 
   useEffect(() => {
-    on('position_update', (data) => {
-      refetch();
-    });
-
-    return () => {
-      off('position_update');
-    };
+    const handler = () => refetch();
+    on('position_update', handler);
+    return () => off('position_update', handler);
   }, [on, off, refetch]);
 
   if (!positions || positions.length === 0) {

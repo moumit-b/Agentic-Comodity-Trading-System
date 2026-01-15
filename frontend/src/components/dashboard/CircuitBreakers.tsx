@@ -13,13 +13,9 @@ export function CircuitBreakers() {
   const { data: breakers, refetch } = useApi<CircuitBreaker[]>(() => apiClient.getCircuitBreakers(), 30000);
 
   useEffect(() => {
-    on('circuit_breaker', (data) => {
-      refetch();
-    });
-
-    return () => {
-      off('circuit_breaker');
-    };
+    const handler = () => refetch();
+    on('circuit_breaker', handler);
+    return () => off('circuit_breaker', handler);
   }, [on, off, refetch]);
 
   const breakerLabels: Record<string, string> = {

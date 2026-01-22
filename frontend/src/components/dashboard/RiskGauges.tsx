@@ -69,11 +69,11 @@ export function RiskGauges() {
           </div>
         )}
 
-        {/* RSI Gauge */}
-        {riskMetrics && (
-          <div>
+        {/* RSI Gauges */}
+        {riskMetrics && Object.entries(riskMetrics.current_rsi).map(([symbol, rsi]) => (
+          <div key={symbol}>
             <h3 className="text-sm font-display font-semibold text-text-secondary mb-3">
-              RSI (USO)
+              RSI ({symbol})
             </h3>
             <div className="relative w-48 h-24 mx-auto">
               <svg viewBox="0 0 200 120" className="w-full h-full">
@@ -89,16 +89,16 @@ export function RiskGauges() {
                 <path
                   d="M 20 100 A 80 80 0 0 1 180 100"
                   fill="none"
-                  stroke={getGaugeColor(riskMetrics.current_rsi, { green: 30, yellow: 70 })}
+                  stroke={getGaugeColor(rsi, { green: 30, yellow: 70 })}
                   strokeWidth="12"
                   strokeLinecap="round"
-                  strokeDasharray={`${(riskMetrics.current_rsi / 100) * 251.2} 251.2`}
+                  strokeDasharray={`${(rsi / 100) * 251.2} 251.2`}
                   className="transition-all duration-1000"
                 />
               </svg>
               <div className="absolute inset-0 flex items-end justify-center pb-2">
                 <span className="text-2xl font-mono font-light">
-                  {riskMetrics.current_rsi.toFixed(1)}
+                  {rsi.toFixed(1)}
                 </span>
               </div>
             </div>
@@ -108,7 +108,7 @@ export function RiskGauges() {
               <span className="text-profit">Overbought</span>
             </div>
           </div>
-        )}
+        ))}
 
         {/* Daily P&L Progress */}
         {riskMetrics && (

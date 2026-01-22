@@ -60,7 +60,7 @@ export interface CircuitBreaker {
 export interface RiskMetrics {
   portfolio_heat_pct: number;
   daily_pnl_pct: number;
-  current_rsi: number;
+  current_rsi: Record<string, number>;
   daily_target_pct: number;
   daily_limit_pct: number;
   consecutive_losses: number;

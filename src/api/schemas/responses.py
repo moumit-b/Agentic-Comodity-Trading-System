@@ -93,7 +93,7 @@ class RiskMetricsResponse(BaseModel):
 
     portfolio_heat_pct: float
     daily_pnl_pct: float
-    current_rsi: float
+    current_rsi: dict[str, float]
     daily_target_pct: float
     daily_limit_pct: float
     consecutive_losses: int

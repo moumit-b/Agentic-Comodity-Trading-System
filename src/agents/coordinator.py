@@ -289,10 +289,11 @@ class CoordinatorAgent:
                     f"Indicators (1h): RSI={indicators['1h'].rsi:.1f}, "
                     f"SMA20={indicators['1h'].sma_20:.2f}"
                 )
-            elif indicators:
-                 # Log whatever we have
-                 first_tf = list(indicators.keys())[0]
-                 logger.info(f"Indicators ({first_tf}): RSI={indicators[first_tf].rsi:.1f}")
+            
+            # Log other timeframes for debugging
+            for tf, ind in indicators.items():
+                if tf != "1h":
+                    logger.info(f"Indicators ({tf}): RSI={ind.rsi:.1f}, Close={bars['close'].iloc[-1]:.2f}")
 
             # === STEP 4: Detect Market Regime ===
             market_regime = self.strategy_selector.detect_market_regime(bars, indicators)

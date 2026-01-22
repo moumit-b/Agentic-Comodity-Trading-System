@@ -58,8 +58,24 @@ async def get_risk_metrics(
                 daily_pnl_pct = 0.0
                 consecutive_losses = 0
 
-        # Get current RSI (placeholder - would get from indicators table)
-        current_rsi = 50.0
+        # Get current RSI
+        current_rsi = 50.0  # Default neutral
+        async with get_session() as session:
+            # Get latest 5m RSI for the first symbol in config
+            symbol = config.symbols[0] if config.symbols else "USO"
+            stmt = (
+                select(Indicator.rsi)
+                .where(
+                    Indicator.symbol == symbol,
+                    Indicator.timeframe == "5m"
+                )
+                .order_by(Indicator.timestamp.desc())
+                .limit(1)
+            )
+            result = await session.execute(stmt)
+            rsi_val = result.scalar_one_or_none()
+            if rsi_val is not None:
+                current_rsi = float(rsi_val)
 
         return RiskMetricsResponse(
             portfolio_heat_pct=portfolio_heat_pct,

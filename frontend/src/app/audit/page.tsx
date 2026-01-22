@@ -17,11 +17,33 @@ type AuditLog = {
 };
 
 export default function AuditPage() {
-  const { data: logs } = useApi(() =>
-    // Mock audit logs - replace with actual API call when backend implements it
-    Promise.resolve(generateMockLogs()),
-    10000
-  );
+  const { data: logs } = useApi(async () => {
+    try {
+      // Fetch decisions from API
+      const decisions = await apiClient.getDecisions(100);
+      
+      // Map to AuditLog format
+      return decisions.map((d: any) => ({
+        id: d.id,
+        timestamp: d.timestamp,
+        event_type: d.approved ? 'TRADE_APPROVED' : 'TRADE_REJECTED',
+        severity: d.approved ? 'INFO' : 'WARNING',
+        component: 'RiskManager',
+        message: d.approved 
+          ? `Trade approved for execution` 
+          : `Trade rejected: ${d.rejection_reason || 'Unknown reason'}`,
+        metadata: {
+          signal_id: d.signal_id,
+          position_size: d.position_size,
+          risk_amount: d.risk_amount,
+          risk_pct: d.risk_pct
+        }
+      }));
+    } catch (error) {
+      console.error('Failed to fetch audit logs:', error);
+      return [];
+    }
+  }, 10000);
 
   const [severityFilter, setSeverityFilter] = useState<string>('ALL');
   const [componentFilter, setComponentFilter] = useState<string>('ALL');

@@ -51,6 +51,10 @@ class ApiClient {
     return this.request<any[]>(`/signals${query ? `?${query}` : ''}`);
   }
 
+  async getDecisions(limit = 100) {
+    return this.request<any[]>(`/decisions?limit=${limit}`);
+  }
+
   async getExecutions(limit = 50) {
     return this.request<any[]>(`/executions?limit=${limit}`);
   }

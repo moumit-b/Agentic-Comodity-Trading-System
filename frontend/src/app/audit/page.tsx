@@ -27,7 +27,7 @@ export default function AuditPage() {
         id: d.id,
         timestamp: d.timestamp,
         event_type: d.approved ? 'TRADE_APPROVED' : 'TRADE_REJECTED',
-        severity: d.approved ? 'INFO' : 'WARNING',
+        severity: (d.approved ? 'INFO' : 'WARNING') as AuditLog['severity'],
         component: 'RiskManager',
         message: d.approved 
           ? `Trade approved for execution` 

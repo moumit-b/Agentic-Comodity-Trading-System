@@ -7,7 +7,7 @@ Type=simple
 User=ec2-user
 WorkingDirectory=/home/ec2-user/Agentic-Comodity-Trading-System
 Environment="PYTHONPATH=/home/ec2-user/Agentic-Comodity-Trading-System"
-ExecStart=/home/ec2-user/.local/bin/uv run python scripts/run_continuous_loop.py
+ExecStart=/home/ec2-user/.local/bin/uv run python scripts/run_hybrid_data_feed.py
 Restart=always
 RestartSec=10
 

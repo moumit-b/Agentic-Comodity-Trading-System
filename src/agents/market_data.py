@@ -262,10 +262,15 @@ class MarketDataAgent:
 
             # Bollinger Bands
             bbands = ta.bbands(df_copy["close"], length=20, std=2)
-            if bbands is not None:
-                df_copy["bb_upper"] = bbands["BBU_20_2.0"]
-                df_copy["bb_middle"] = bbands["BBM_20_2.0"]
-                df_copy["bb_lower"] = bbands["BBL_20_2.0"]
+            if bbands is not None and not bbands.empty:
+                # Dynamically find columns
+                upper_col = next((c for c in bbands.columns if c.startswith("BBU")), None)
+                mid_col = next((c for c in bbands.columns if c.startswith("BBM")), None)
+                lower_col = next((c for c in bbands.columns if c.startswith("BBL")), None)
+                
+                if upper_col: df_copy["bb_upper"] = bbands[upper_col]
+                if mid_col: df_copy["bb_middle"] = bbands[mid_col]
+                if lower_col: df_copy["bb_lower"] = bbands[lower_col]
 
             # Get latest row
             latest = df_copy.iloc[-1]

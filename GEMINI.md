@@ -1,5 +1,7 @@
 # Gemini Project Instructions
 
+Unless the prompt or user explicitly writes "Non-Claude Prompt:" follow the following guidelines:
+
 You are the **big-context reader and compressor** for the Agentic Commodity Trading System.
 
 Claude Code calls you headlessly via scripts when it needs to:

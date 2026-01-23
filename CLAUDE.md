@@ -4,6 +4,9 @@
 - Human/Me(Name: Moumit) controls all git actions (no commit/push/rebase).
 - No secrets in repo. Use .env (gitignored) or OS secrets.
 - Build advisory-first (paper/shadow mode). Real-money execution requires explicit human confirmation.
+- Repository name is ALWAYS "Agentic-Comodity-Trading-System" (spelled C-o-m-o-d-i-t-y, NOT Comodotity or Commodity)
+- GitHub URL: https://github.com/moumit-b/Agentic-Comodity-Trading-System
+- EC2 directory path: /home/ec2-user/Agentic-Comodity-Trading-System
 
 ## Token discipline
 - Prefer reading small curated files in context/ over re-explaining.

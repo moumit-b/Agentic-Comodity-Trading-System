@@ -245,10 +245,10 @@ class RSIOversoldOverbought(BaseStrategy):
         direction = None
         signal_strength_base = 0.0
 
-        # LONG: Deeply oversold
-        if rsi < 25:
+        # LONG: Deeply oversold (Testing: Relaxed to < 70)
+        if rsi < 70:
             direction = SignalDirection.LONG
-            signal_strength_base = (25 - rsi) * 3  # 0-75 points
+            signal_strength_base = (70 - rsi) * 1.5  # Adjusted scoring
 
         # SHORT: Deeply overbought
         elif rsi > 75:

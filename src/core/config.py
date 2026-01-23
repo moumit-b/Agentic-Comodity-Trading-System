@@ -248,6 +248,34 @@ class DiscordConfig(BaseSettings):
     max_messages_per_minute: int = Field(default=10, ge=1, le=30)
 
 
+class FinnhubConfig(BaseSettings):
+    """Finnhub API configuration for real-time market data."""
+
+    model_config = SettingsConfigDict(
+        env_prefix="FINNHUB_",
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+        extra="ignore",
+    )
+
+    api_key: SecretStr = Field(default=SecretStr(""), description="Finnhub API key (free tier)")
+    ws_url: str = Field(default="wss://ws.finnhub.io", description="WebSocket endpoint")
+
+    # Connection settings
+    ws_reconnect_attempts: int = Field(default=5, ge=1, le=20)
+    ws_reconnect_delay: int = Field(default=5, ge=1, le=60, description="Seconds")
+    ws_ping_interval: int = Field(default=30, ge=10, le=120, description="Keep-alive ping")
+
+    # Rate limiting (free tier: 60 requests/min)
+    rate_limit_per_minute: int = Field(default=55, ge=1, le=60, description="Safety buffer")
+
+    # Data source priority
+    use_as_primary: bool = Field(
+        default=True, description="Use Finnhub as primary real-time source (Alpaca as backup)"
+    )
+
+
 class AWSConfig(BaseSettings):
     """AWS configuration for cloud deployment."""
 
@@ -285,7 +313,13 @@ class AWSConfig(BaseSettings):
 
 @lru_cache
 def get_config() -> tuple[
-    TradingConfig, DatabaseConfig, RedisConfig, AlpacaConfig, DiscordConfig, AWSConfig
+    TradingConfig,
+    DatabaseConfig,
+    RedisConfig,
+    AlpacaConfig,
+    DiscordConfig,
+    FinnhubConfig,
+    AWSConfig,
 ]:
     """
     Load all configuration objects from environment.
@@ -294,10 +328,10 @@ def get_config() -> tuple[
 
     Returns:
         Tuple of (TradingConfig, DatabaseConfig, RedisConfig, AlpacaConfig,
-                  DiscordConfig, AWSConfig)
+                  DiscordConfig, FinnhubConfig, AWSConfig)
 
     Example:
-        >>> trading, db, redis, alpaca, discord, aws = get_config()
+        >>> trading, db, redis, alpaca, discord, finnhub, aws = get_config()
         >>> print(f"Risk per trade: {trading.risk_per_trade_pct}")
         >>> print(f"Database URL: {db.url}")
     """
@@ -307,5 +341,6 @@ def get_config() -> tuple[
         RedisConfig(),
         AlpacaConfig(),
         DiscordConfig(),
+        FinnhubConfig(),
         AWSConfig(),
     )

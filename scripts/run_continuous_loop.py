@@ -6,6 +6,15 @@ import logging
 import time
 from datetime import datetime, timezone
 
+# Install uvloop for 10-30% faster asyncio performance
+try:
+    import uvloop
+    uvloop.install()
+    logger_uvloop = logging.getLogger(__name__)
+    logger_uvloop.info("uvloop installed - using high-performance event loop")
+except ImportError:
+    pass  # Fall back to default asyncio event loop
+
 # Add current directory to path
 sys.path.append(os.getcwd())
 

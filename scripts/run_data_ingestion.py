@@ -51,10 +51,14 @@ async def ingest_data():
     await agent.connect()
     
     symbols = ["USO", "UNG"]
-    
-    # Fetch last 24 hours of data, ending 20 mins ago (Free Tier restriction)
+
+    # Fetch last 14 days of data for deep indicator analysis (4h/1d timeframes)
+    # Ending 20 mins ago due to IEX free tier delay
+    # 14 days = sufficient for 200-period 1h SMA (requires 200 hours = 8.3 days)
     end = datetime.now(timezone.utc) - timedelta(minutes=20)
-    start = end - timedelta(days=1)
+    start = end - timedelta(days=14)
+
+    logger.info(f"Fetching {(end - start).days} days of historical data ({start} to {end})")
     
     for symbol in symbols:
         logger.info(f"Fetching data for {symbol}...")

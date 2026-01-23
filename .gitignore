@@ -33,7 +33,7 @@ GEMINI.md
 context/CONTEXT_PACK.md
 context/DESIGN_DECISIONS.md
 context/local/
-docs/BOOTSTRAP_PROMPT.md
+docs/prompts_archive/
 
 # Session and development summaries
 SESSION_SUMMARY.md

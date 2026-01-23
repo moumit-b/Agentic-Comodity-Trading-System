@@ -118,7 +118,7 @@ class MarketDataAgent:
         try:
             symbol = bar.symbol
             logger.debug(
-                f"Received 1m bar: {symbol} @ {bar.timestamp} "
+                f"Received 1m bar (Alpaca): {symbol} @ {bar.timestamp} "
                 f"O:{bar.open} H:{bar.high} L:{bar.low} C:{bar.close} V:{bar.volume}"
             )
 
@@ -134,6 +134,29 @@ class MarketDataAgent:
                 "trade_count": bar.trade_count if hasattr(bar, "trade_count") else None,
             }
 
+            await self.process_bar(symbol, bar_data, source="alpaca")
+
+        except Exception as e:
+            logger.error(f"Error processing bar for {bar.symbol}: {e}", exc_info=True)
+
+    async def process_bar(self, symbol: str, bar_data: dict, source: str = "unknown") -> None:
+        """
+        Process a 1-minute bar from any source (Finnhub, Alpaca, etc.).
+
+        Unified handler for real-time bar processing.
+
+        Args:
+            symbol: Stock symbol
+            bar_data: Bar data dict with keys: timestamp, open, high, low, close, volume, vwap, trade_count
+            source: Data source name ("finnhub", "alpaca", etc.)
+        """
+        try:
+            logger.debug(
+                f"Processing 1m bar ({source}): {symbol} @ {bar_data['timestamp']} "
+                f"O:{bar_data['open']:.2f} H:{bar_data['high']:.2f} "
+                f"L:{bar_data['low']:.2f} C:{bar_data['close']:.2f} V:{bar_data['volume']}"
+            )
+
             # Append to in-memory buffer
             if symbol not in self._bars_1m:
                 self._bars_1m[symbol] = pd.DataFrame([bar_data])
@@ -143,7 +166,7 @@ class MarketDataAgent:
                     ignore_index=True,
                 )
 
-            # Keep only last 500 bars in memory
+            # Keep only last 500 bars in memory (optimize memory usage)
             if len(self._bars_1m[symbol]) > 500:
                 self._bars_1m[symbol] = self._bars_1m[symbol].iloc[-500:]
 
@@ -153,11 +176,11 @@ class MarketDataAgent:
             # Persist to PostgreSQL
             await self._persist_bar_1m(symbol, bar_data)
 
-            # Trigger aggregation
+            # Trigger aggregation and indicator calculation
             await self._aggregate_timeframes(symbol)
 
         except Exception as e:
-            logger.error(f"Error processing bar for {bar.symbol}: {e}", exc_info=True)
+            logger.error(f"Error processing bar for {symbol} from {source}: {e}", exc_info=True)
 
     async def _persist_bar_1m(self, symbol: str, bar_data: dict) -> None:
         """
@@ -443,36 +466,97 @@ class MarketDataAgent:
             return "UNKNOWN"
 
     async def fetch_historical_bars(
-        self, symbol: str, start: datetime, end: datetime
+        self, symbol: str, start: datetime, end: datetime, max_bars_per_request: int = 10000
     ) -> pd.DataFrame:
         """
-        Fetch historical 1-minute bars from Alpaca API.
+        Fetch historical 1-minute bars from Alpaca API with pagination.
+
+        Alpaca limits responses to ~10,000 bars per request.
+        For deep history (14 days = ~20,000 bars), we paginate automatically.
 
         Args:
             symbol: Stock symbol
             start: Start datetime
             end: End datetime
+            max_bars_per_request: Maximum bars per API call (default: 10,000)
 
         Returns:
-            DataFrame with historical bars
+            DataFrame with historical bars (concatenated from all pages)
         """
         if not self._historical_client:
             raise RuntimeError("Historical client not initialized")
 
         try:
-            request = StockBarsRequest(
-                symbol_or_symbols=symbol,
-                timeframe=TimeFrame(1, TimeFrameUnit.Minute),
-                start=start,
-                end=end,
+            logger.info(f"Fetching historical data for {symbol} from {start} to {end}")
+
+            # Calculate expected number of bars (1 min bars during market hours)
+            # Rough estimate: 6.5 hours/day * 60 min = 390 bars/day
+            days = (end - start).days
+            estimated_bars = days * 390
+
+            all_bars = []
+            current_start = start
+
+            # Paginate if needed
+            while current_start < end:
+                # Request next chunk
+                request = StockBarsRequest(
+                    symbol_or_symbols=symbol,
+                    timeframe=TimeFrame(1, TimeFrameUnit.Minute),
+                    start=current_start,
+                    end=end,
+                    limit=max_bars_per_request,
+                )
+
+                try:
+                    bars = self._historical_client.get_stock_bars(request)
+                    df_chunk = bars.df
+
+                    if df_chunk.empty:
+                        logger.warning(f"No more data available for {symbol} starting from {current_start}")
+                        break
+
+                    all_bars.append(df_chunk)
+                    logger.info(f"Fetched {len(df_chunk)} bars for {symbol} (chunk)")
+
+                    # Update current_start to the last timestamp + 1 minute
+                    if isinstance(df_chunk.index, pd.MultiIndex):
+                        # MultiIndex: (symbol, timestamp)
+                        last_timestamp = df_chunk.index.get_level_values('timestamp')[-1]
+                    else:
+                        # Single index: timestamp
+                        last_timestamp = df_chunk.index[-1]
+
+                    current_start = last_timestamp + pd.Timedelta(minutes=1)
+
+                    # Break if we got fewer bars than requested (end of data)
+                    if len(df_chunk) < max_bars_per_request:
+                        break
+
+                    # Rate limiting: small delay between requests
+                    await asyncio.sleep(0.2)
+
+                except Exception as e:
+                    logger.error(f"Error fetching chunk for {symbol} starting {current_start}: {e}")
+                    break
+
+            # Concatenate all chunks
+            if not all_bars:
+                logger.warning(f"No historical data found for {symbol}")
+                return pd.DataFrame()
+
+            df_combined = pd.concat(all_bars)
+
+            # Remove duplicates (can happen at chunk boundaries)
+            df_combined = df_combined[~df_combined.index.duplicated(keep='first')]
+
+            logger.info(
+                f"Fetched {len(df_combined)} total historical 1m bars for {symbol} "
+                f"from {start} to {end} (estimated: {estimated_bars})"
             )
 
-            bars = self._historical_client.get_stock_bars(request)
-            df = bars.df
-
-            logger.info(f"Fetched {len(df)} historical 1m bars for {symbol} from {start} to {end}")
-            return df
+            return df_combined
 
         except Exception as e:
-            logger.error(f"Error fetching historical bars for {symbol}: {e}")
+            logger.error(f"Error fetching historical bars for {symbol}: {e}", exc_info=True)
             return pd.DataFrame()

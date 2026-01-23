@@ -267,10 +267,14 @@ class MarketDataAgent:
                 upper_col = next((c for c in bbands.columns if c.startswith("BBU")), None)
                 mid_col = next((c for c in bbands.columns if c.startswith("BBM")), None)
                 lower_col = next((c for c in bbands.columns if c.startswith("BBL")), None)
-                
-                if upper_col: df_copy["bb_upper"] = bbands[upper_col]
-                if mid_col: df_copy["bb_middle"] = bbands[mid_col]
-                if lower_col: df_copy["bb_lower"] = bbands[lower_col]
+
+                # Safely copy columns, checking they exist in bbands
+                if upper_col and upper_col in bbands.columns:
+                    df_copy["bb_upper"] = bbands[upper_col]
+                if mid_col and mid_col in bbands.columns:
+                    df_copy["bb_middle"] = bbands[mid_col]
+                if lower_col and lower_col in bbands.columns:
+                    df_copy["bb_lower"] = bbands[lower_col]
 
             # Get latest row
             latest = df_copy.iloc[-1]

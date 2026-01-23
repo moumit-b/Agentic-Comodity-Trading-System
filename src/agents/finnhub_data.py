@@ -113,8 +113,11 @@ class FinnhubDataAgent:
 
         self._running = False
 
-        if self._ws and not self._ws.closed:
-            await self._ws.close()
+        if self._ws:
+            try:
+                await self._ws.close()
+            except Exception:
+                pass
             self._ws = None
 
         logger.info("Finnhub Data Agent disconnected")
@@ -126,7 +129,7 @@ class FinnhubDataAgent:
         Args:
             symbols: List of stock symbols (e.g., ["USO", "UNG"])
         """
-        if not self._ws or self._ws.closed:
+        if not self._ws:
             raise RuntimeError("Not connected. Call connect() first.")
 
         logger.info(f"Subscribing to real-time trades for: {symbols}")
@@ -344,7 +347,7 @@ class FinnhubDataAgent:
             Dict with connection status, last ping time, subscribed symbols
         """
         return {
-            "connected": self._ws is not None and not self._ws.closed,
+            "connected": self._ws is not None,
             "running": self._running,
             "last_ping": self._last_ping,
             "time_since_ping": time.time() - self._last_ping,

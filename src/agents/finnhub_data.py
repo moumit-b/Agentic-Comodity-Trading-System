@@ -9,6 +9,7 @@ from typing import Callable, Coroutine
 
 import websockets
 from websockets.exceptions import ConnectionClosed
+from websockets.protocol import State
 
 from src.core.config import FinnhubConfig
 
@@ -175,6 +176,6 @@ class FinnhubDataAgent:
     def get_health_status(self) -> dict:
         """Return connection health status."""
         return {
-            "connected": self.ws is not None and self.ws.open,
+            "connected": self.ws is not None and self.ws.state == State.OPEN,
             "subscribed": len(self.subscribed_symbols)
         }

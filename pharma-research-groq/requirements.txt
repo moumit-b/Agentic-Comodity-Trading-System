@@ -1,0 +1,42 @@
+# Streamlit for UI
+streamlit>=1.32.0
+
+# LangChain for agent framework
+langchain>=0.1.0
+langchain-core>=0.1.0
+langchain-community>=0.0.20
+
+# Google Gemini integration for LangChain (PRIMARY LLM)
+langchain-google-genai>=2.0.0
+google-generativeai>=0.8.0
+
+# Legacy Ollama integration (DEPRECATED)
+# langchain-ollama>=0.1.0
+
+# LangGraph for agent orchestration (dual orchestration system)
+langgraph>=0.2.0
+
+# MCP SDK for connecting to MCP servers
+mcp>=0.9.0
+
+# BioMCP for biomedical research tools
+biomcp-python>=0.7.0
+
+# HTTP client for MCP
+httpx>=0.25.0
+
+# Additional utilities
+python-dotenv>=1.0.0
+pydantic>=2.0.0
+
+# Persistent Context Layer (Phase 1)
+sqlalchemy>=2.0.0
+chromadb>=0.4.0
+sentence-transformers>=2.2.0
+
+# Report Generation (Phase 5)
+weasyprint>=60.0
+markdown>=3.5.0
+
+# Optional: For enhanced caching (Redis-based)
+# redis>=5.0.0

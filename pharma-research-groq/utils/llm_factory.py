@@ -11,6 +11,7 @@ from typing import Optional
 
 def get_llm(
     provider: Optional[str] = None,
+    model: Optional[str] = None,
     temperature: Optional[float] = None,
     max_tokens: Optional[int] = None
 ):
@@ -19,6 +20,7 @@ def get_llm(
 
     Args:
         provider: LLM provider ("groq", "gemini", "ollama"). If None, uses config.LLM_PROVIDER
+        model: Override default model name
         temperature: Override default temperature
         max_tokens: Override default max tokens
 
@@ -32,22 +34,31 @@ def get_llm(
     provider = provider or config.LLM_PROVIDER
 
     if provider == "groq":
-        return _get_groq_llm(temperature, max_tokens)
+        return _get_groq_llm(model, temperature, max_tokens)
     elif provider == "gemini":
-        return _get_gemini_llm(temperature, max_tokens)
+        return _get_gemini_llm(model, temperature, max_tokens)
     elif provider == "ollama":
-        return _get_ollama_llm(temperature, max_tokens)
+        return _get_ollama_llm(model, temperature, max_tokens)
     else:
         raise ValueError(f"Unsupported LLM provider: {provider}")
 
 
-def _get_groq_llm(temperature=None, max_tokens=None):
+def _get_groq_llm(model=None, temperature=None, max_tokens=None):
     """Initialize Groq LLM (PRIMARY - FREE with 14,400 requests/day)."""
     import os
+    import sys
+
+    # DEBUG: Print Python path info
+    print(f"[DEBUG] Python executable: {sys.executable}")
+    print(f"[DEBUG] Python version: {sys.version}")
+    print(f"[DEBUG] sys.path has {len(sys.path)} entries")
 
     try:
         from langchain_groq import ChatGroq
-    except ImportError:
+        print(f"[DEBUG] Successfully imported ChatGroq")
+    except ImportError as e:
+        print(f"[DEBUG] Failed to import langchain_groq: {e}")
+        print(f"[DEBUG] sys.path: {sys.path[:3]}")  # Show first 3 paths
         raise ImportError(
             "langchain-groq is required for Groq support. "
             "Install with: pip install langchain-groq"
@@ -65,14 +76,14 @@ def _get_groq_llm(temperature=None, max_tokens=None):
         )
 
     return ChatGroq(
-        model=config.GROQ_MODEL,
+        model=model or config.GROQ_MODEL,
         groq_api_key=api_key,
         temperature=temperature or config.GROQ_TEMPERATURE,
         max_tokens=max_tokens or config.GROQ_MAX_TOKENS
     )
 
 
-def _get_gemini_llm(temperature=None, max_tokens=None):
+def _get_gemini_llm(model=None, temperature=None, max_tokens=None):
     """Initialize Google Gemini LLM (BACKUP - only 20 requests/day)."""
     import os
 
@@ -95,7 +106,7 @@ def _get_gemini_llm(temperature=None, max_tokens=None):
         )
 
     return ChatGoogleGenerativeAI(
-        model=config.GEMINI_MODEL,
+        model=model or config.GEMINI_MODEL,
         google_api_key=api_key,
         temperature=temperature or config.GEMINI_TEMPERATURE,
         max_output_tokens=max_tokens or config.GEMINI_MAX_OUTPUT_TOKENS,
@@ -103,7 +114,7 @@ def _get_gemini_llm(temperature=None, max_tokens=None):
     )
 
 
-def _get_ollama_llm(temperature=None, max_tokens=None):
+def _get_ollama_llm(model=None, temperature=None, max_tokens=None):
     """Initialize Ollama LLM (DEPRECATED)."""
     try:
         from langchain_ollama import ChatOllama

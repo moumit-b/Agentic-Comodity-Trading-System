@@ -54,6 +54,7 @@ class EMACrossoverStrategy(BaseStrategy):
         bars: pd.DataFrame,
         indicators: dict[str, IndicatorSet],
         market_regime: MarketRegime,
+        overrides: dict[str, str] | None = None,
     ) -> Signal | None:
         """Analyze for EMA crossover signals."""
         if bars.empty or len(bars) < 20:
@@ -210,6 +211,7 @@ class MACDTrendStrategy(BaseStrategy):
         bars: pd.DataFrame,
         indicators: dict[str, IndicatorSet],
         market_regime: MarketRegime,
+        overrides: dict[str, str] | None = None,
     ) -> Signal | None:
         """Analyze for MACD trend signals."""
         if bars.empty or len(bars) < 26:  # MACD needs 26 periods

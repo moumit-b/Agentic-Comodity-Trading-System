@@ -136,10 +136,19 @@ class OrchestratorAgent:
         """Create execution plan based on query analysis."""
         complexity = state["query_complexity"]
 
+        # Dynamic max_agents based on complexity
+        # Simple: 1 agent, Moderate: 3 agents, Complex: ALL 5 agents
+        if complexity == "simple":
+            max_agents = 1
+        elif complexity == "moderate":
+            max_agents = 3
+        else:  # complex
+            max_agents = 5  # Use ALL agents for complex queries
+
         plan = {
             "strategy": "parallel" if complexity == "simple" else "sequential",
-            "max_agents": 1 if complexity == "simple" else 3,
-            "timeout": 30 if complexity == "simple" else 60
+            "max_agents": max_agents,
+            "timeout": 30 if complexity == "simple" else 90  # Increased for llama-3.3-70b
         }
 
         state["execution_plan"] = plan
@@ -153,7 +162,7 @@ class OrchestratorAgent:
         agent_scores = {}
         for agent_name, agent in self.agents.items():
             score = agent.can_handle(state["query"], keywords)
-            if score > 0.3:
+            if score >= 0.3:  # Include agents with score >= 0.3
                 agent_scores[agent_name] = score
 
         sorted_agents = sorted(agent_scores.items(), key=lambda x: x[1], reverse=True)

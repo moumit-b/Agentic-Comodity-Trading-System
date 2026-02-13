@@ -79,6 +79,20 @@ class TradingConfig(BaseSettings):
     enable_swing_trading: bool = Field(default=True)
     enable_breakout_strategies: bool = Field(default=False)
 
+    # Phase 2: Context Agent
+    enable_context_agent: bool = Field(default=True, description="Enable LLM-powered sentiment analysis")
+    context_cache_ttl_minutes: int = Field(default=5, ge=1, le=60)
+
+    # Phase 2: Recursive Learning Model (RLM)
+    enable_rlm: bool = Field(default=True, description="Enable Recursive Learning Model")
+    rlm_auto_apply: bool = Field(default=True, description="Auto-apply RLM adjustments (paper mode)")
+    rlm_adjustment_expiry_hours: int = Field(default=24, ge=1, le=168)
+    rlm_observation_interval_minutes: int = Field(default=5, ge=1, le=60)
+    rlm_reflection_interval_minutes: int = Field(default=15, ge=5, le=120)
+
+    # Phase 2: Dynamic Thresholds
+    enable_dynamic_thresholds: bool = Field(default=True)
+
     @field_validator("automation_mode")
     @classmethod
     def validate_live_auto(cls, v: AutomationMode, info) -> AutomationMode:
@@ -311,6 +325,67 @@ class AWSConfig(BaseSettings):
     lambda_memory: int = Field(default=512, ge=128, le=10240, description="Lambda memory MB")
 
 
+class GeminiConfig(BaseSettings):
+    """Gemini LLM configuration (fallback provider)."""
+
+    model_config = SettingsConfigDict(
+        env_prefix="GEMINI_",
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+        extra="ignore",
+    )
+
+    # API Configuration
+    api_key: SecretStr = Field(default=SecretStr(""), description="Gemini API key")
+    model_name: str = Field(default="gemini-2.5-flash-lite", description="Model to use")
+
+    # Rate Limits (Gemini 2.5 Flash-Lite free tier - 15 RPM, 1000 RPD)
+    max_requests_per_minute: int = Field(default=15, ge=1, le=60)
+    max_tokens_per_minute: int = Field(default=250_000, ge=1)
+    max_requests_per_day: int = Field(default=1000, ge=1)
+
+    # Caching
+    cache_ttl_seconds: int = Field(default=300, description="5 min cache for context analysis")
+
+    # Generation Parameters
+    temperature: float = Field(default=0.3, ge=0.0, le=1.0, description="Lower = more deterministic")
+    max_output_tokens: int = Field(default=1024, ge=1, le=8192)
+
+    # Safety
+    enable_llm: bool = Field(default=True, description="Feature flag to disable LLM calls")
+
+
+class GroqConfig(BaseSettings):
+    """Groq LLM configuration (primary provider - fastest free inference)."""
+
+    model_config = SettingsConfigDict(
+        env_prefix="GROQ_",
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+        extra="ignore",
+    )
+
+    # API Configuration
+    api_key: SecretStr = Field(default=SecretStr(""), description="Groq API key")
+    model_name: str = Field(
+        default="llama-3.3-70b-versatile", description="Groq model to use"
+    )
+
+    # Rate Limits (Groq free tier)
+    max_requests_per_minute: int = Field(default=30, ge=1, le=60)
+    max_tokens_per_minute: int = Field(default=6000, ge=1)
+    max_requests_per_day: int = Field(default=1000, ge=1)
+
+    # Generation Parameters
+    temperature: float = Field(default=0.3, ge=0.0, le=1.0)
+    max_tokens: int = Field(default=1024, ge=1, le=8192)
+
+    # Safety
+    enable_groq: bool = Field(default=True, description="Feature flag to enable Groq as primary")
+
+
 @lru_cache
 def get_config() -> tuple[
     TradingConfig,
@@ -320,6 +395,8 @@ def get_config() -> tuple[
     DiscordConfig,
     FinnhubConfig,
     AWSConfig,
+    GeminiConfig,
+    GroqConfig,
 ]:
     """
     Load all configuration objects from environment.
@@ -328,10 +405,10 @@ def get_config() -> tuple[
 
     Returns:
         Tuple of (TradingConfig, DatabaseConfig, RedisConfig, AlpacaConfig,
-                  DiscordConfig, FinnhubConfig, AWSConfig)
+                  DiscordConfig, FinnhubConfig, AWSConfig, GeminiConfig, GroqConfig)
 
     Example:
-        >>> trading, db, redis, alpaca, discord, finnhub, aws = get_config()
+        >>> trading, db, redis, alpaca, discord, finnhub, aws, gemini, groq = get_config()
         >>> print(f"Risk per trade: {trading.risk_per_trade_pct}")
         >>> print(f"Database URL: {db.url}")
     """
@@ -343,4 +420,6 @@ def get_config() -> tuple[
         DiscordConfig(),
         FinnhubConfig(),
         AWSConfig(),
+        GeminiConfig(),
+        GroqConfig(),
     )

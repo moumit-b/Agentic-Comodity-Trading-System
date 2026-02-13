@@ -34,7 +34,7 @@ except Exception as e:
 
 # Groq Settings (PRIMARY PROVIDER - FREE TIER)
 GROQ_API_KEY = os.getenv("GROQ_API_KEY") or ""
-GROQ_MODEL = "llama-3.1-8b-instant"  # Fast, accurate, 14,400 requests/day FREE
+GROQ_MODEL = \"mixtral-8x7b-32768\"  # High performance alternative  # Token-efficient for free tier
 GROQ_TEMPERATURE = 0.7
 GROQ_MAX_TOKENS = 8192
 

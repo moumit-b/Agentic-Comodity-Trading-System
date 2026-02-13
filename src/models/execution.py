@@ -3,7 +3,7 @@
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import BigInteger, DateTime, ForeignKey, Numeric, String, Text
+from sqlalchemy import BigInteger, DateTime, ForeignKey, Numeric, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.core.database import Base
@@ -19,7 +19,7 @@ class Decision(Base):
         BigInteger, ForeignKey("signals.id", ondelete="SET NULL")
     )
     timestamp: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, server_default="NOW()"
+        DateTime(timezone=True), nullable=False, server_default=func.now()
     )
     decision: Mapped[str] = mapped_column(String(20), nullable=False)  # APPROVE, REJECT, HOLD
     reason: Mapped[str | None] = mapped_column(Text)
@@ -55,7 +55,7 @@ class Execution(Base):
         BigInteger, ForeignKey("decisions.id", ondelete="SET NULL")
     )
     timestamp: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, server_default="NOW()"
+        DateTime(timezone=True), nullable=False, server_default=func.now()
     )
 
     # Execution details

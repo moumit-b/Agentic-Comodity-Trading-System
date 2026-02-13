@@ -208,6 +208,21 @@ variable "discord_webhook_url" {
   default     = ""
 }
 
+# Phase 2: LLM API keys
+variable "groq_api_key" {
+  description = "Groq API key (primary LLM provider - free tier)"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "gemini_api_key" {
+  description = "Google Gemini API key (fallback LLM provider)"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
 # CloudWatch variables
 variable "cloudwatch_log_retention_days" {
   description = "CloudWatch log retention period in days"

@@ -126,12 +126,13 @@ def lambda_handler(event, context):
         risk_manager = RiskManagerAgent(config)
         settlement_tracker = SettlementTrackerAgent()
         execution_agent = ExecutionAgent(config, mode=config.automation_mode)
-        
+
         # Initialize market data agent for fetching bars (Bypass Redis connection)
+        from alpaca.data.historical import StockHistoricalDataClient
+
         from src.agents.market_data import MarketDataAgent
         from src.core.config import RedisConfig
-        from alpaca.data.historical import StockHistoricalDataClient
-        
+
         redis_config = RedisConfig()
         market_data_agent = MarketDataAgent(alpaca_config, redis_config)
         # Manually init historical client, skipping Redis connection
@@ -139,7 +140,49 @@ def lambda_handler(event, context):
             api_key=alpaca_config.api_key.get_secret_value(),
             secret_key=alpaca_config.api_secret.get_secret_value(),
         )
-        
+
+        # Initialize Phase 2: LLM + Context + RLM agents
+        context_agent = None
+        learning_observer = None
+
+        try:
+            from src.agents.context_agent import ContextAgent
+            from src.agents.learning_observer import LearningObserver
+            from src.core.config import GeminiConfig, GroqConfig
+            from src.services.llm_service import LLMService
+
+            # Load LLM API keys from Secrets Manager (optional)
+            llm_secret_name = os.environ.get("LLM_SECRET_NAME")
+            if llm_secret_name:
+                llm_creds = get_secret(llm_secret_name, region)
+                os.environ["GROQ_API_KEY"] = llm_creds.get("groq_api_key", "")
+                os.environ["GEMINI_API_KEY"] = llm_creds.get("gemini_api_key", "")
+            # Also support direct env vars
+            groq_key = os.environ.get("GROQ_API_KEY", "")
+            gemini_key = os.environ.get("GEMINI_API_KEY", "")
+
+            gemini_config = GeminiConfig()
+            groq_config = GroqConfig()
+
+            if groq_key or gemini_key:
+                llm_service = LLMService(
+                    gemini_config=gemini_config,
+                    groq_config=groq_config,
+                )
+                context_agent = ContextAgent(
+                    llm_service=llm_service,
+                    cache_ttl_minutes=config.context_cache_ttl_minutes,
+                )
+                learning_observer = LearningObserver(
+                    llm_service=llm_service,
+                )
+                logger.info("Phase 2 agents initialized (ContextAgent + LearningObserver)")
+            else:
+                logger.info("No LLM API keys found - Phase 2 agents disabled")
+
+        except Exception as e:
+            logger.warning(f"Phase 2 agents initialization failed (non-fatal): {e}")
+
         # Initialize coordinator
         logger.info("Initializing coordinator agent...")
         coordinator = CoordinatorAgent(
@@ -151,12 +194,14 @@ def lambda_handler(event, context):
             circuit_breakers=circuit_breakers,
             execution_agent=execution_agent,
             notifier=None,  # Discord notifications optional in Lambda
+            context_agent=context_agent,
+            learning_observer=learning_observer,
         )
 
         # Define async function for fetching account data and running trading cycle
         async def run_trading_cycle_async():
             # Skip market_data_agent.connect() to avoid Redis/VPC timeout
-            
+
             # Fetch account information
             logger.info("Fetching account information...")
             account = await alpaca_service.get_account()
@@ -194,10 +239,12 @@ def lambda_handler(event, context):
             # Get daily trades count and consecutive losses from database
             logger.info("Fetching daily trading statistics...")
             from datetime import date, timedelta
-            from sqlalchemy import select, func
-            from src.models.execution import Execution
-            from src.models.account import DailyLimit
+
+            from sqlalchemy import func, select
+
             from src.core.database import get_session
+            from src.models.account import DailyLimit
+            from src.models.execution import Execution
 
             async with get_session() as session:
                 today = date.today()
@@ -221,7 +268,7 @@ def lambda_handler(event, context):
             # Process each symbol
             results = {}
             symbols = config.symbols # Default: ["USO", "UNG"]
-            
+
             for symbol in symbols:
                 logger.info(f"Processing symbol: {symbol}")
                 try:
@@ -229,31 +276,31 @@ def lambda_handler(event, context):
                     # Use 20-minute delay to support Free Tier keys (SIP data restriction)
                     end = datetime.utcnow() - timedelta(minutes=20)
                     start = end - timedelta(minutes=2000)
-                    
+
                     # We need the raw objects, not DF, for Coordinator compatibility
                     # Using internal client directly to get Bar objects
                     from alpaca.data.requests import StockBarsRequest
                     from alpaca.data.timeframe import TimeFrame, TimeFrameUnit
-                    
+
                     request = StockBarsRequest(
                         symbol_or_symbols=symbol,
                         timeframe=TimeFrame(1, TimeFrameUnit.Minute),
                         start=start,
                         end=end,
                     )
-                    
+
                     # Use the client from market_data_agent
                     if not market_data_agent._historical_client:
                         logger.error("Historical client not initialized")
                         continue
-                        
+
                     bars_response = market_data_agent._historical_client.get_stock_bars(request)
                     bars_list = bars_response[symbol] if symbol in bars_response else []
-                    
+
                     if not bars_list:
                         logger.warning(f"No bars found for {symbol}")
                         continue
-                        
+
                     market_data = {
                         "symbol": symbol,
                         "bars": {symbol: bars_list},
@@ -269,7 +316,7 @@ def lambda_handler(event, context):
                         daily_pnl_pct=daily_pnl_pct,
                     )
                     results[symbol] = result
-                    
+
                 except Exception as e:
                     logger.error(f"Error processing {symbol}: {e}", exc_info=True)
                     results[symbol] = {"error": str(e)}

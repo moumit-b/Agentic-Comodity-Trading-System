@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from sqlalchemy import BigInteger, DateTime, String, UniqueConstraint
+from sqlalchemy import BigInteger, DateTime, String, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -19,7 +19,7 @@ class ConfigOverride(Base):
     key: Mapped[str] = mapped_column(String(100), nullable=False, unique=True)
     value: Mapped[dict] = mapped_column(JSONB, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, server_default="NOW()"
+        DateTime(timezone=True), nullable=False, server_default=func.now()
     )
     updated_by: Mapped[str | None] = mapped_column(
         String(50), comment="User or system that made the change"

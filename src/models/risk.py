@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from sqlalchemy import BigInteger, DateTime, String, Text
+from sqlalchemy import BigInteger, DateTime, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.core.database import Base
@@ -15,7 +15,7 @@ class CircuitBreaker(Base):
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     timestamp: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, server_default="NOW()"
+        DateTime(timezone=True), nullable=False, server_default=func.now()
     )
     breaker_type: Mapped[str] = mapped_column(
         String(50),

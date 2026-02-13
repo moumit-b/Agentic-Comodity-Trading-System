@@ -3,7 +3,7 @@
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import BigInteger, DateTime, Numeric, String, Text
+from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, Numeric, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.core.database import Base
@@ -16,7 +16,7 @@ class Signal(Base):
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     timestamp: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, server_default="NOW()"
+        DateTime(timezone=True), nullable=False, server_default=func.now()
     )
     symbol: Mapped[str] = mapped_column(String(10), nullable=False)
     direction: Mapped[str] = mapped_column(String(10), nullable=False)  # LONG, SHORT
@@ -43,8 +43,19 @@ class Signal(Base):
     # Reasoning (JSON or text)
     reasoning: Mapped[str | None] = mapped_column(Text)
 
+    # Phase 2: Execution tracking
+    executed: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false")
+    execution_id: Mapped[int | None] = mapped_column(
+        BigInteger, ForeignKey("executions.id", ondelete="SET NULL")
+    )
+
+    # Relationships
+    # execution = relationship("Execution", back_populates="signals")
+    # learning_logs = relationship("LearningLog", back_populates="signal")
+
     def __repr__(self) -> str:
         return (
             f"<Signal(symbol={self.symbol}, direction={self.direction}, "
-            f"strategy={self.strategy_name}, strength={self.signal_strength})>"
+            f"strategy={self.strategy_name}, strength={self.signal_strength}, "
+            f"executed={self.executed})>"
         )

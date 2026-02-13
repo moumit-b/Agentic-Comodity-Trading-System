@@ -152,6 +152,7 @@ class BaseStrategy(ABC):
         bars: pd.DataFrame,
         indicators: dict[str, IndicatorSet],
         market_regime: MarketRegime,
+        overrides: dict[str, str] | None = None,
     ) -> Signal | None:
         """
         Analyze market data and generate trading signal.
@@ -161,6 +162,7 @@ class BaseStrategy(ABC):
             bars: DataFrame with recent OHLCV bars (primary timeframe)
             indicators: Dict mapping timeframe -> IndicatorSet
             market_regime: Current market regime
+            overrides: Optional RLM strategy parameter overrides
 
         Returns:
             Signal object if valid signal generated, None otherwise

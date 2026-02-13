@@ -1,18 +1,16 @@
 """Authentication dependencies."""
 
 import os
-from typing import Optional
 
 from fastapi import Header, HTTPException, status
-from pydantic import SecretStr
 
-# Allow setting API key via env var. 
+# Allow setting API key via env var.
 # SECURITY: Do not hardcode production keys here. Set DASHBOARD_API_KEY in your .env or system environment.
 API_KEY = os.getenv("DASHBOARD_API_KEY", "dev-key-placeholder")
 
 
 async def verify_api_key(
-    x_api_key: Optional[str] = Header(None, alias="X-API-Key")
+    x_api_key: str | None = Header(None, alias="X-API-Key")
 ) -> str:
     """
     Verify API key from header.

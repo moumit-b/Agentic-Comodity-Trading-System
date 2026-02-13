@@ -47,6 +47,26 @@ resource "aws_secretsmanager_secret_version" "discord" {
   })
 }
 
+# LLM API credentials (Phase 2: Groq + Gemini)
+resource "aws_secretsmanager_secret" "llm" {
+  name                    = "${var.project_name}/llm/credentials"
+  description             = "LLM API keys for Groq (primary) and Gemini (fallback)"
+  recovery_window_in_days = 7
+
+  tags = {
+    Name      = "${var.project_name}-llm-secret"
+    Component = "Phase2-GenAI"
+  }
+}
+
+resource "aws_secretsmanager_secret_version" "llm" {
+  secret_id = aws_secretsmanager_secret.llm.id
+  secret_string = jsonencode({
+    groq_api_key   = var.groq_api_key
+    gemini_api_key = var.gemini_api_key
+  })
+}
+
 # Output secret ARNs for reference
 output "secret_arns" {
   description = "ARNs of all secrets"
@@ -55,6 +75,7 @@ output "secret_arns" {
     discord  = aws_secretsmanager_secret.discord.arn
     database = aws_secretsmanager_secret.rds_password.arn
     redis    = aws_secretsmanager_secret.redis.arn
+    llm      = aws_secretsmanager_secret.llm.arn
   }
   sensitive = true
 }

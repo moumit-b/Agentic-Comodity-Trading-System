@@ -1,0 +1,15 @@
+[Unit]
+Description=Trading System Strategy Engine
+After=network.target trading-loop.service
+
+[Service]
+Type=simple
+User=ec2-user
+WorkingDirectory=/home/ec2-user/Agentic-Comodity-Trading-System
+Environment="PYTHONPATH=/home/ec2-user/Agentic-Comodity-Trading-System"
+ExecStart=/home/ec2-user/.local/bin/uv run python scripts/run_continuous_loop.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

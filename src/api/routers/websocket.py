@@ -1,12 +1,10 @@
 """WebSocket endpoint for real-time updates."""
 
-import asyncio
 import json
 import logging
 import os
 from datetime import datetime
 from decimal import Decimal
-from typing import Dict, Set
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, status
 
@@ -23,8 +21,8 @@ class ConnectionManager:
 
     def __init__(self):
         """Initialize connection manager."""
-        self.active_connections: Set[WebSocket] = set()
-        self.connections_per_ip: Dict[str, int] = {}  # Track connections per IP
+        self.active_connections: set[WebSocket] = set()
+        self.connections_per_ip: dict[str, int] = {}  # Track connections per IP
         self.max_connections_per_ip = 10  # Allow multiple connections per IP for dashboard
 
     async def connect(self, websocket: WebSocket, client_ip: str):

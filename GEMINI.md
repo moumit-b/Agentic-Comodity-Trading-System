@@ -20,7 +20,7 @@ Write these artifacts to `context/local/` (gitignored):
    - Open TODOs and known risks
    - Recent changes (last 7 days of git log if relevant)
 
-2. **repo_map.md** - Repository structure
+2. **repo_map.md** - Repository structure 
    - Directory tree (focus on src/, tests/, docs/)
    - Important files and their purpose
    - Entry points and configuration files

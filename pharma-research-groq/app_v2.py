@@ -55,8 +55,7 @@ if "initialized" not in st.session_state:
     st.session_state.initialized = False
 
 
-@st.cache_resource
-def initialize_system():
+@st.cache_resource`r`ndef initialize_system(model_name=None):
     """Initialize all system components (cached)."""
     # Check feature flags
     use_persistent = config.FEATURE_FLAGS.get("use_persistent_context", False)
@@ -79,7 +78,7 @@ def initialize_system():
     orchestrator = None
     try:
         # Initialize LLM using factory
-        llm = get_llm()
+        llm = get_llm(model=model_name)
 
         # For now, MCP orchestrator is a placeholder
         # TODO: Initialize real MCP orchestrator when MCP servers are connected
@@ -121,8 +120,7 @@ def main():
             st.cache_resource.clear()
             st.rerun()
 
-        # Initialize system
-        system = initialize_system()
+        # Model Selection`r`n        if config.LLM_PROVIDER == \"groq\":`r`n            available_models = [\"mixtral-8x7b-32768\", \"llama-3.3-70b-versatile\", \"llama-3.1-8b-instant\"]`r`n        else:`r`n            available_models = [\"gemini-2.5-flash\"]`r`n`r`n        selected_model = st.selectbox(\"Choose Model\", available_models)`r`n        system = initialize_system(model_name=selected_model)
 
         # LLM validation status
         llm_validation = system["llm_validation"]
@@ -170,19 +168,27 @@ def main():
             if st.button("Generate Report"):
                 if system["session_manager"]:
                     try:
-                        generator = ReportGenerator(system["session_manager"])
-                        report = generator.generate_report(
-                            st.session_state.session_id,
-                            report_type=ReportType.COMPETITIVE_INTELLIGENCE,
-                            format=ReportFormat.MARKDOWN
-                        )
-                        st.download_button(
-                            "Download Report",
-                            report,
-                            file_name="report.md"
-                        )
+                        with st.spinner("Generating report..."):
+                            generator = ReportGenerator(system["session_manager"], system["llm"])
+                            report = generator.generate_report(
+                                st.session_state.session_id,
+                                report_type=ReportType.COMPETITIVE_INTELLIGENCE,
+                                format=ReportFormat.MARKDOWN
+                            )
+                            st.success(f"Report generated! ({len(report)} characters)")
+                            st.download_button(
+                                "Download Report",
+                                report,
+                                file_name=f"report_{st.session_state.session_id[:8]}.md",
+                                mime="text/markdown"
+                            )
+                    except ValueError as e:
+                        st.error(f"Session error: {e}")
+                        st.info("Try asking a research query first, then generate the report.")
                     except Exception as e:
                         st.error(f"Error generating report: {e}")
+                        import traceback
+                        st.code(traceback.format_exc())
 
         # Feature flags display
         st.header("System Status")

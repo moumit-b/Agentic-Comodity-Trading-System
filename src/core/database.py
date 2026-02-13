@@ -91,7 +91,9 @@ def create_test_engine(config: DatabaseConfig) -> AsyncEngine:
     )
 
 
-def init_db(config: DatabaseConfig, test_mode: bool = False) -> None:
+def init_db(
+    config: DatabaseConfig, test_mode: bool = False, url_override: str | None = None
+) -> None:
     """
     Initialize database engine and session factory.
 
@@ -100,6 +102,7 @@ def init_db(config: DatabaseConfig, test_mode: bool = False) -> None:
     Args:
         config: Database configuration
         test_mode: If True, use NullPool for testing
+        url_override: Override database URL (e.g., for SQLite in-memory tests)
 
     Example:
         >>> from src.core.config import DatabaseConfig
@@ -113,7 +116,17 @@ def init_db(config: DatabaseConfig, test_mode: bool = False) -> None:
         return
 
     # Create engine
-    _engine = create_test_engine(config) if test_mode else create_engine(config)
+    if url_override:
+        # Direct URL override (e.g., SQLite for tests) - no pool, no PG-specific args
+        _engine = create_async_engine(
+            url_override,
+            echo=config.echo_sql,
+            poolclass=NullPool,
+        )
+    elif test_mode:
+        _engine = create_test_engine(config)
+    else:
+        _engine = create_engine(config)
 
     # Create session factory
     _session_factory = async_sessionmaker(

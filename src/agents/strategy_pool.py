@@ -102,6 +102,7 @@ class StrategyPoolAgent:
         bars: pd.DataFrame,
         indicators: dict[str, IndicatorSet],
         market_regime: MarketRegime,
+        strategy_overrides: dict[str, dict[str, str]] | None = None,
     ) -> list[Signal]:
         """
         Execute all strategies on the given market data.
@@ -111,6 +112,7 @@ class StrategyPoolAgent:
             bars: Recent OHLCV bars
             indicators: Multi-timeframe indicators
             market_regime: Current market regime
+            strategy_overrides: RLM overrides keyed by strategy name
 
         Returns:
             List of signals generated (may be empty)
@@ -126,8 +128,13 @@ class StrategyPoolAgent:
                     )
                     continue
 
-                # Execute strategy
-                signal = strategy.analyze(symbol, bars, indicators, market_regime)
+                # Get RLM overrides for this specific strategy
+                overrides = (strategy_overrides or {}).get(strategy.get_name())
+
+                # Execute strategy with overrides
+                signal = strategy.analyze(
+                    symbol, bars, indicators, market_regime, overrides=overrides
+                )
 
                 if signal is not None:
                     signals.append(signal)

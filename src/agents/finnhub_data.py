@@ -1,11 +1,9 @@
 """Finnhub Data Agent - Handles real-time WebSocket data from Finnhub."""
 
-import asyncio
 import json
 import logging
-import time
+from collections.abc import Callable, Coroutine
 from datetime import UTC, datetime
-from typing import Callable, Coroutine
 
 import websockets
 from websockets.exceptions import ConnectionClosed
@@ -43,7 +41,7 @@ class FinnhubDataAgent:
         self.ws: websockets.WebSocketClientProtocol | None = None
         self.subscribed_symbols: list[str] = []
         self._running = False
-        
+
         # Aggregation buffer: symbol -> {volume: 0, open: 0, high: 0, low: 0, close: 0, count: 0, start_time: ts}
         self._current_bars: dict[str, dict] = {}
 
@@ -54,7 +52,7 @@ class FinnhubDataAgent:
 
         url = f"{self.config.ws_url}?token={self.config.api_key.get_secret_value()}"
         logger.info(f"Connecting to Finnhub: {self.config.ws_url}")
-        
+
         try:
             self.ws = await websockets.connect(url, ping_interval=self.config.ws_ping_interval)
             self._running = True
@@ -88,18 +86,18 @@ class FinnhubDataAgent:
             raise RuntimeError("Not connected")
 
         logger.info("Starting Finnhub message loop")
-        
+
         while self._running:
             try:
                 message = await self.ws.recv()
                 data = json.loads(message)
-                
+
                 if data.get("type") == "trade":
                     for trade in data["data"]:
                         await self._process_trade(trade)
                 elif data.get("type") == "ping":
                     pass # Keep-alive
-                
+
             except ConnectionClosed:
                 logger.warning("Finnhub connection closed")
                 if self._running:
@@ -118,17 +116,17 @@ class FinnhubDataAgent:
         price = float(trade["p"])
         volume = int(trade["v"])
         timestamp_ms = trade["t"]
-        
+
         # Determine 1m bar bucket (truncate seconds)
         # Using current system time to ensure consistency with system clock,
         # or use trade time if latency is low. Finnhub sends UTC timestamp in ms.
         # Let's use trade time bucketed.
         trade_dt = datetime.fromtimestamp(timestamp_ms / 1000, tz=UTC)
         bar_start_time = trade_dt.replace(second=0, microsecond=0)
-        
+
         # Check if we moved to a new bar
         current = self._current_bars.get(symbol)
-        
+
         if current and current["start_time"] < bar_start_time:
             # Finalize previous bar
             await self._finalize_bar(symbol, current)
@@ -169,7 +167,7 @@ class FinnhubDataAgent:
             "trade_count": bar_data["count"],
             "vwap": None # Finnhub doesn't provide VWAP easily in Aggregation
         }
-        
+
         logger.debug(f"Finnhub bar completed: {symbol} @ {final_bar['timestamp']}")
         await self.on_bar_callback(symbol, final_bar)
 

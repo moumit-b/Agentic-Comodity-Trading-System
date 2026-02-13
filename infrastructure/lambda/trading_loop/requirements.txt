@@ -27,5 +27,10 @@ redis>=5.0.0
 boto3>=1.34.0
 aioboto3>=12.0.0
 
+# AI/LLM (Phase 2)
+google-generativeai>=0.8.0
+groq>=0.9.0
+praw>=7.7.0
+
 # Notifications (optional)
 discord.py>=2.3.0

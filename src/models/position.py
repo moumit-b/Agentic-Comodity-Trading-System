@@ -3,7 +3,7 @@
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import BigInteger, DateTime, Numeric, String
+from sqlalchemy import BigInteger, DateTime, Numeric, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.core.database import Base
@@ -20,7 +20,7 @@ class Position(Base):
     qty: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
     entry_price: Mapped[Decimal] = mapped_column(Numeric(10, 4), nullable=False)
     entry_time: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, server_default="NOW()"
+        DateTime(timezone=True), nullable=False, server_default=func.now()
     )
     stop_loss: Mapped[Decimal | None] = mapped_column(Numeric(10, 4))
     take_profit: Mapped[Decimal | None] = mapped_column(Numeric(10, 4))

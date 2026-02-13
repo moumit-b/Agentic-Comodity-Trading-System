@@ -3,16 +3,25 @@
 import logging
 from dataclasses import dataclass
 from decimal import Decimal
+from typing import TYPE_CHECKING
 
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from src.agents.context_agent import ContextAgent
 from src.agents.execution_agent import ExecutionAgent, ExecutionDecision
+from src.agents.learning_observer import LearningObserver
 from src.agents.risk_manager import RiskManagerAgent
 from src.agents.settlement_tracker import SettlementTrackerAgent
 from src.agents.strategy_pool import StrategyPoolAgent
 from src.agents.strategy_selector import StrategySelectorAgent
 from src.core.config import TradingConfig
+from src.core.database import get_session
 from src.services.circuit_breakers import CircuitBreakerService
 from src.services.discord_notifier import DiscordNotifier
 from src.strategies import Signal
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +64,8 @@ class CoordinatorAgent:
         circuit_breakers: CircuitBreakerService,
         execution_agent: ExecutionAgent,
         notifier: DiscordNotifier | None = None,
+        context_agent: ContextAgent | None = None,
+        learning_observer: LearningObserver | None = None,
     ):
         """
         Initialize Coordinator Agent.
@@ -68,6 +79,8 @@ class CoordinatorAgent:
             circuit_breakers: Circuit breaker service
             execution_agent: Execution agent
             notifier: Discord notifier (optional)
+            context_agent: Context agent for sentiment analysis (Phase 2, optional)
+            learning_observer: Learning observer for RLM (Phase 2, optional)
         """
         self.config = config
         self.strategy_selector = strategy_selector
@@ -77,8 +90,124 @@ class CoordinatorAgent:
         self.circuit_breakers = circuit_breakers
         self.execution_agent = execution_agent
         self.notifier = notifier
+        self.context_agent = context_agent
+        self.learning_observer = learning_observer
 
         logger.info("Coordinator Agent initialized")
+        if context_agent:
+            logger.info("Phase 2: ContextAgent enabled")
+        if learning_observer:
+            logger.info("Phase 2: LearningObserver enabled (RLM)")
+
+    async def _fetch_active_overrides(self) -> dict[str, dict[str, str]]:
+        """
+        Fetch active RLM strategy overrides from the database.
+
+        Returns:
+            Dict mapping strategy_name -> {parameter_name: override_value}
+        """
+        if not self.learning_observer:
+            return {}
+
+        try:
+            from collections import defaultdict
+            from datetime import datetime
+
+            from sqlalchemy import select
+
+            from src.models.learning import StrategyOverride
+
+            async with get_session() as session:
+                query = (
+                    select(StrategyOverride)
+                    .where(StrategyOverride.expires_at > datetime.now())
+                    .where(StrategyOverride.reverted_at.is_(None))
+                )
+                result = await session.execute(query)
+                overrides = result.scalars().all()
+
+                grouped: dict[str, dict[str, str]] = defaultdict(dict)
+                for override in overrides:
+                    grouped[override.strategy_name][override.parameter_name] = override.override_value
+                    logger.debug(
+                        f"RLM override: {override.strategy_name}.{override.parameter_name}"
+                        f"={override.override_value}"
+                    )
+
+                if grouped:
+                    logger.info(
+                        f"Loaded {sum(len(v) for v in grouped.values())} active RLM overrides "
+                        f"for {len(grouped)} strategies"
+                    )
+
+                return dict(grouped)
+
+        except Exception as e:
+            logger.error(f"Failed to fetch RLM overrides: {e}")
+            return {}
+
+    async def _get_market_context(
+        self,
+        symbol: str,
+        bars: "pd.DataFrame",
+        indicators: dict,
+        session: AsyncSession,
+    ) -> tuple[Decimal | None, str | None]:
+        """
+        Get market context (sentiment and regime tag) from ContextAgent.
+
+        Args:
+            symbol: Trading symbol
+            bars: Price bars DataFrame
+            indicators: Technical indicators
+            session: Database session
+
+        Returns:
+            Tuple of (sentiment_score, context_tag) or (None, None) if unavailable
+        """
+        if not self.context_agent:
+            return None, None
+
+        try:
+            # Build market metrics for context analysis
+            current_price = Decimal(str(bars["close"].iloc[-1]))
+
+            # Get primary timeframe indicators
+            primary_tf = "15m"
+            if primary_tf not in indicators:
+                primary_tf = list(indicators.keys())[0] if indicators else None
+
+            if not primary_tf:
+                return None, None
+
+            ind = indicators[primary_tf]
+
+            market_metrics = {
+                "price": float(current_price),
+                "rsi": ind.rsi if ind.rsi else 50.0,
+                "daily_change_pct": 0.0,  # TODO: Calculate from daily bars
+                "volume_ratio": 1.0,  # TODO: Calculate from volume
+            }
+
+            # Get context analysis (uses cache if available)
+            context = await self.context_agent.get_context_analysis(
+                symbol=symbol,
+                market_metrics=market_metrics,
+                session=session,
+            )
+
+            if context:
+                logger.info(
+                    f"Context: sentiment={context.sentiment_score:.2f}, "
+                    f"regime={context.regime_tag}, confidence={context.confidence:.2f}"
+                )
+                return context.sentiment_score, context.regime_tag
+
+            return None, None
+
+        except Exception as e:
+            logger.error(f"Failed to get market context: {e}", exc_info=True)
+            return None, None
 
     async def run_trading_cycle(
         self,
@@ -120,7 +249,7 @@ class CoordinatorAgent:
             logger.warning(f"Circuit breakers tripped: {breaker_status.reasons}")
             if self.notifier:
                 for breaker_type, reason in zip(
-                    breaker_status.active_breakers, breaker_status.reasons
+                    breaker_status.active_breakers, breaker_status.reasons, strict=False
                 ):
                     await self.notifier.notify_circuit_breaker(
                         breaker_type=breaker_type.value,
@@ -219,7 +348,7 @@ class CoordinatorAgent:
             for tf in timeframes:
                 # Resample logic
                 rule = tf.replace("m", "min").replace("h", "H")
-                
+
                 # Ensure index is datetime
                 if not isinstance(bars.index, pd.DatetimeIndex):
                     bars.index = pd.to_datetime(bars.index)
@@ -255,14 +384,14 @@ class CoordinatorAgent:
                     upper_col = next((c for c in bbands.columns if c.startswith("BBU")), None)
                     mid_col = next((c for c in bbands.columns if c.startswith("BBM")), None)
                     lower_col = next((c for c in bbands.columns if c.startswith("BBL")), None)
-                    
+
                     if upper_col and mid_col and lower_col:
                         df["bb_upper"] = bbands[upper_col]
                         df["bb_middle"] = bbands[mid_col]
                         df["bb_lower"] = bbands[lower_col]
 
                 latest = df.iloc[-1]
-                
+
                 indicators[tf] = IndicatorSet(
                     timeframe=tf,
                     sma_20=float(latest["sma_20"]) if pd.notna(latest["sma_20"]) else None,
@@ -279,8 +408,8 @@ class CoordinatorAgent:
 
             if not indicators:
                 logger.warning("Failed to calculate indicators for any timeframe")
-                # Fallback to single timeframe (1m treated as 1h) if resampling failed, 
-                # but better to return empty than wrong data. 
+                # Fallback to single timeframe (1m treated as 1h) if resampling failed,
+                # but better to return empty than wrong data.
                 # Actually, let's keep the old behavior as a fallback if dict is empty but warn.
                 pass
 
@@ -289,7 +418,7 @@ class CoordinatorAgent:
                     f"Indicators (1h): RSI={indicators['1h'].rsi:.1f}, "
                     f"SMA20={indicators['1h'].sma_20:.2f}"
                 )
-            
+
             # Log other timeframes for debugging
             for tf, ind in indicators.items():
                 if tf != "1h":
@@ -299,10 +428,16 @@ class CoordinatorAgent:
             market_regime = self.strategy_selector.detect_market_regime(bars, indicators)
             logger.info(f"Market regime: {market_regime.value}")
 
-            # === STEP 5: Execute Strategies ===
+            # === STEP 5: Execute Strategies (with RLM overrides) ===
+            strategy_overrides = await self._fetch_active_overrides()
+
             logger.info("Executing strategies...")
             signals = self.strategy_pool.execute_all_strategies(
-                symbol=symbol, bars=bars, indicators=indicators, market_regime=market_regime
+                symbol=symbol,
+                bars=bars,
+                indicators=indicators,
+                market_regime=market_regime,
+                strategy_overrides=strategy_overrides,
             )
 
             if not signals:
@@ -319,7 +454,53 @@ class CoordinatorAgent:
 
             logger.info(f"Generated {len(signals)} signal(s)")
 
-            # === STEP 6: Rank and Select Best Signal ===
+            # === STEP 6: Get Market Context (Phase 2) ===
+            sentiment_score = None
+            context_tag = None
+            context_analysis = None
+
+            if self.context_agent:
+                async with get_session() as session:
+                    sentiment_score, context_tag = await self._get_market_context(
+                        symbol=symbol,
+                        bars=bars,
+                        indicators=indicators,
+                        session=session,
+                    )
+                    # Fetch the cached context analysis for confidence adjustment
+                    if sentiment_score is not None:
+                        from datetime import datetime
+
+                        from sqlalchemy import select
+
+                        from src.models.learning import ContextAnalysis
+
+                        query = (
+                            select(ContextAnalysis)
+                            .where(ContextAnalysis.symbol == symbol)
+                            .where(ContextAnalysis.expires_at > datetime.now())
+                            .order_by(ContextAnalysis.analyzed_at.desc())
+                            .limit(1)
+                        )
+                        result = await session.execute(query)
+                        context_analysis = result.scalar_one_or_none()
+
+            # === STEP 7: Adjust ALL Signal Confidences Based on Context (before ranking) ===
+            if self.context_agent and context_analysis:
+                for signal in signals:
+                    original_confidence = signal.confidence
+                    signal.confidence = self.context_agent.adjust_confidence_for_context(
+                        base_confidence=signal.confidence,
+                        context=context_analysis,
+                        signal_direction=signal.direction.value,
+                    )
+                    if original_confidence != signal.confidence:
+                        logger.info(
+                            f"Adjusted confidence for {signal.strategy_name}: "
+                            f"{original_confidence:.2f} → {signal.confidence:.2f}"
+                        )
+
+            # === STEP 8: Rank and Select Best Signal ===
             ranked_signals = self.strategy_pool.rank_signals(signals)
             best_signal = ranked_signals[0]
 
@@ -328,7 +509,28 @@ class CoordinatorAgent:
                 f"(strength={best_signal.signal_strength}, confidence={best_signal.confidence})"
             )
 
-            # === STEP 7: Evaluate Signal Through Risk Pipeline ===
+            # === STEP 9: Log Prediction (Phase 2 RLM) ===
+            if self.learning_observer:
+                async with get_session() as session:
+                    try:
+                        # Get indicators for prediction metadata
+                        primary_tf = "15m" if "15m" in indicators else list(indicators.keys())[0]
+                        ind = indicators[primary_tf]
+
+                        await self.learning_observer.log_prediction(
+                            signal=best_signal,
+                            session=session,
+                            signal_id=None,  # TODO: FK to signals table after saving
+                            rsi=ind.rsi,
+                            atr=ind.atr,
+                            sentiment_score=sentiment_score,
+                            context_tag=context_tag,
+                        )
+                        logger.info("✓ Prediction logged to RLM")
+                    except Exception as e:
+                        logger.error(f"Failed to log prediction: {e}")
+
+            # === STEP 10: Evaluate Signal Through Risk Pipeline ===
             trade_decision = await self.evaluate_signal(
                 signal=best_signal,
                 account_balance=account_balance,

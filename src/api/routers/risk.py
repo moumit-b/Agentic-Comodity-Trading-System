@@ -61,7 +61,7 @@ async def get_risk_metrics(
         # Get current RSI for all symbols
         current_rsi = {}
         symbols = config.symbols if config.symbols else ["USO", "UNG"]
-        
+
         async with get_session() as session:
             for symbol in symbols:
                 stmt = (

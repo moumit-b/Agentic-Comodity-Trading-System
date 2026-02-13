@@ -3,7 +3,7 @@
 from datetime import date, datetime
 from decimal import Decimal
 
-from sqlalchemy import BigInteger, Date, DateTime, Integer, Numeric, UniqueConstraint
+from sqlalchemy import BigInteger, Date, DateTime, Integer, Numeric, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.core.database import Base
@@ -16,7 +16,7 @@ class AccountSnapshot(Base):
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     timestamp: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, server_default="NOW()"
+        DateTime(timezone=True), nullable=False, server_default=func.now()
     )
     total_cash: Mapped[Decimal] = mapped_column(Numeric(15, 2), nullable=False)
     settled_cash: Mapped[Decimal] = mapped_column(Numeric(15, 2), nullable=False)

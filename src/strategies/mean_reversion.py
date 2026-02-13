@@ -18,11 +18,16 @@ from src.strategies.base import (
 
 class BollingerBandsMeanReversion(BaseStrategy):
     """
-    Bollinger Bands mean-reversion strategy.
+    Bollinger Bands mean-reversion strategy with dynamic thresholds.
 
     Entry Signals:
-    - LONG: Price touches or breaks below lower BB + RSI < 30 (oversold)
-    - SHORT: Price touches or breaks above upper BB + RSI > 70 (overbought)
+    - LONG: Price touches or breaks below lower BB + RSI < dynamic_threshold (oversold)
+    - SHORT: Price touches or breaks above upper BB + RSI > dynamic_threshold (overbought)
+
+    Thresholds adjust based on volatility (ATR):
+    - High volatility (>3%): Stricter thresholds (wait for more extreme conditions)
+    - Low volatility (<1%): Relaxed thresholds (catch smaller movements)
+    - Normal volatility: Default thresholds
 
     Best in: RANGING markets
     Horizon: INTRADAY (quick reversions)
@@ -31,6 +36,66 @@ class BollingerBandsMeanReversion(BaseStrategy):
     def __init__(self, min_confidence: Decimal = Decimal("0.65")):
         """Initialize Bollinger Bands mean-reversion strategy."""
         super().__init__(min_confidence)
+
+    def _get_dynamic_thresholds(
+        self,
+        atr: Decimal,
+        current_price: Decimal,
+        overrides: dict[str, str] | None = None,
+    ) -> dict[str, float]:
+        """
+        Calculate dynamic RSI thresholds based on volatility and RLM overrides.
+
+        Args:
+            atr: Average True Range
+            current_price: Current market price
+            overrides: Optional RLM override adjustments
+
+        Returns:
+            Dict with rsi_oversold and rsi_overbought thresholds
+        """
+        # Calculate volatility percentage
+        volatility_pct = float(atr / current_price) * 100
+
+        # Base thresholds (default for normal volatility)
+        if volatility_pct > 3.0:
+            # High volatility: stricter thresholds (wait for more extreme conditions)
+            rsi_oversold = 30.0
+            rsi_overbought = 70.0
+        elif volatility_pct < 1.0:
+            # Low volatility: relaxed thresholds (catch smaller movements)
+            rsi_oversold = 40.0
+            rsi_overbought = 60.0
+        else:
+            # Normal volatility: default thresholds
+            rsi_oversold = 35.0
+            rsi_overbought = 65.0
+
+        # Apply RLM overrides if present
+        if overrides:
+            if "rsi_oversold" in overrides:
+                direction = overrides["rsi_oversold"].lower()
+                if direction == "stricter":
+                    rsi_oversold -= 5.0
+                elif direction == "relaxed":
+                    rsi_oversold += 5.0
+
+            if "rsi_overbought" in overrides:
+                direction = overrides["rsi_overbought"].lower()
+                if direction == "stricter":
+                    rsi_overbought += 5.0
+                elif direction == "relaxed":
+                    rsi_overbought -= 5.0
+
+        # Ensure valid ranges
+        rsi_oversold = max(20.0, min(45.0, rsi_oversold))
+        rsi_overbought = max(55.0, min(80.0, rsi_overbought))
+
+        return {
+            "rsi_oversold": rsi_oversold,
+            "rsi_overbought": rsi_overbought,
+            "volatility_pct": volatility_pct,
+        }
 
     def get_name(self) -> str:
         """Get strategy name."""
@@ -54,6 +119,7 @@ class BollingerBandsMeanReversion(BaseStrategy):
         bars: pd.DataFrame,
         indicators: dict[str, IndicatorSet],
         market_regime: MarketRegime,
+        overrides: dict[str, str] | None = None,
     ) -> Signal | None:
         """Analyze for Bollinger Bands mean-reversion signals."""
         if bars.empty or len(bars) < 20:
@@ -83,24 +149,29 @@ class BollingerBandsMeanReversion(BaseStrategy):
         rsi = primary_ind.rsi
         atr = Decimal(str(primary_ind.atr))
 
+        # Get dynamic thresholds based on volatility + RLM overrides
+        thresholds = self._get_dynamic_thresholds(atr, current_price, overrides=overrides)
+        rsi_oversold = thresholds["rsi_oversold"]
+        rsi_overbought = thresholds["rsi_overbought"]
+
         # Determine signal direction
         direction = None
         signal_strength_base = 0.0
 
         # LONG: Price near/below lower BB + RSI oversold
         price_to_lower = (float(current_price) - float(bb_lower)) / float(bb_lower)
-        if price_to_lower <= 0.02 and rsi < 35:  # Within 2% of lower BB
+        if price_to_lower <= 0.02 and rsi < rsi_oversold:  # Within 2% of lower BB
             direction = SignalDirection.LONG
             # Strength based on how oversold and how close to BB
-            rsi_strength = max(0, 35 - rsi) * 2  # 0-70 points
+            rsi_strength = max(0, rsi_oversold - rsi) * 2  # 0-70 points
             bb_strength = max(0, 0.02 - price_to_lower) * 1000  # 0-20 points
             signal_strength_base = min(rsi_strength + bb_strength, 85)
 
         # SHORT: Price near/above upper BB + RSI overbought
         price_to_upper = (float(bb_upper) - float(current_price)) / float(bb_upper)
-        if price_to_upper <= 0.02 and rsi > 65:  # Within 2% of upper BB
+        if price_to_upper <= 0.02 and rsi > rsi_overbought:  # Within 2% of upper BB
             direction = SignalDirection.SHORT
-            rsi_strength = max(0, rsi - 65) * 2  # 0-70 points
+            rsi_strength = max(0, rsi - rsi_overbought) * 2  # 0-70 points
             bb_strength = max(0, 0.02 - price_to_upper) * 1000  # 0-20 points
             signal_strength_base = min(rsi_strength + bb_strength, 85)
 
@@ -164,7 +235,9 @@ class BollingerBandsMeanReversion(BaseStrategy):
             f"Price({current_price:.2f}) near BB "
             f"{'Lower' if direction == SignalDirection.LONG else 'Upper'}"
             f"({bb_lower if direction == SignalDirection.LONG else bb_upper:.2f}), "
-            f"RSI({rsi:.1f}) {'oversold' if direction == SignalDirection.LONG else 'overbought'}, "
+            f"RSI({rsi:.1f}) {'oversold' if direction == SignalDirection.LONG else 'overbought'} "
+            f"(threshold: {rsi_oversold if direction == SignalDirection.LONG else rsi_overbought:.0f}, "
+            f"vol: {thresholds['volatility_pct']:.1f}%), "
             f"Target: Middle BB({bb_middle:.2f})"
         )
 
@@ -187,11 +260,16 @@ class BollingerBandsMeanReversion(BaseStrategy):
 
 class RSIOversoldOverbought(BaseStrategy):
     """
-    Simple RSI oversold/overbought mean-reversion strategy.
+    Simple RSI oversold/overbought mean-reversion strategy with dynamic thresholds.
 
     Entry Signals:
-    - LONG: RSI < 25 (deeply oversold)
-    - SHORT: RSI > 75 (deeply overbought)
+    - LONG: RSI < dynamic_threshold (deeply oversold)
+    - SHORT: RSI > dynamic_threshold (deeply overbought)
+
+    Thresholds adjust based on volatility (ATR):
+    - High volatility (>3%): Stricter thresholds (wait for more extreme conditions)
+    - Low volatility (<1%): Relaxed thresholds (catch smaller movements)
+    - Normal volatility: Default thresholds
 
     Best in: RANGING markets
     Horizon: INTRADAY
@@ -200,6 +278,66 @@ class RSIOversoldOverbought(BaseStrategy):
     def __init__(self, min_confidence: Decimal = Decimal("0.60")):
         """Initialize RSI oversold/overbought strategy."""
         super().__init__(min_confidence)
+
+    def _get_dynamic_thresholds(
+        self,
+        atr: Decimal,
+        current_price: Decimal,
+        overrides: dict[str, str] | None = None,
+    ) -> dict[str, float]:
+        """
+        Calculate dynamic RSI thresholds based on volatility and RLM overrides.
+
+        Args:
+            atr: Average True Range
+            current_price: Current market price
+            overrides: Optional RLM override adjustments
+
+        Returns:
+            Dict with rsi_oversold and rsi_overbought thresholds
+        """
+        # Calculate volatility percentage
+        volatility_pct = float(atr / current_price) * 100
+
+        # Base thresholds (more extreme than BollingerBands strategy)
+        if volatility_pct > 3.0:
+            # High volatility: stricter thresholds (wait for more extreme conditions)
+            rsi_oversold = 20.0
+            rsi_overbought = 80.0
+        elif volatility_pct < 1.0:
+            # Low volatility: relaxed thresholds (catch smaller movements)
+            rsi_oversold = 30.0
+            rsi_overbought = 70.0
+        else:
+            # Normal volatility: default thresholds
+            rsi_oversold = 25.0
+            rsi_overbought = 75.0
+
+        # Apply RLM overrides if present
+        if overrides:
+            if "rsi_oversold" in overrides:
+                direction = overrides["rsi_oversold"].lower()
+                if direction == "stricter":
+                    rsi_oversold -= 5.0
+                elif direction == "relaxed":
+                    rsi_oversold += 5.0
+
+            if "rsi_overbought" in overrides:
+                direction = overrides["rsi_overbought"].lower()
+                if direction == "stricter":
+                    rsi_overbought += 5.0
+                elif direction == "relaxed":
+                    rsi_overbought -= 5.0
+
+        # Ensure valid ranges (more extreme than BollingerBands)
+        rsi_oversold = max(15.0, min(35.0, rsi_oversold))
+        rsi_overbought = max(65.0, min(85.0, rsi_overbought))
+
+        return {
+            "rsi_oversold": rsi_oversold,
+            "rsi_overbought": rsi_overbought,
+            "volatility_pct": volatility_pct,
+        }
 
     def get_name(self) -> str:
         """Get strategy name."""
@@ -223,6 +361,7 @@ class RSIOversoldOverbought(BaseStrategy):
         bars: pd.DataFrame,
         indicators: dict[str, IndicatorSet],
         market_regime: MarketRegime,
+        overrides: dict[str, str] | None = None,
     ) -> Signal | None:
         """Analyze for RSI oversold/overbought signals."""
         if bars.empty or len(bars) < 14:
@@ -241,19 +380,24 @@ class RSIOversoldOverbought(BaseStrategy):
         rsi = primary_ind.rsi
         atr = Decimal(str(primary_ind.atr))
 
+        # Get dynamic thresholds based on volatility + RLM overrides
+        thresholds = self._get_dynamic_thresholds(atr, current_price, overrides=overrides)
+        rsi_oversold = thresholds["rsi_oversold"]
+        rsi_overbought = thresholds["rsi_overbought"]
+
         # Determine signal direction
         direction = None
         signal_strength_base = 0.0
 
         # LONG: Deeply oversold
-        if rsi < 25:
+        if rsi < rsi_oversold:
             direction = SignalDirection.LONG
-            signal_strength_base = (25 - rsi) * 3  # 0-75 points
+            signal_strength_base = (rsi_oversold - rsi) * 3  # 0-75 points
 
         # SHORT: Deeply overbought
-        elif rsi > 75:
+        elif rsi > rsi_overbought:
             direction = SignalDirection.SHORT
-            signal_strength_base = (rsi - 75) * 3  # 0-75 points
+            signal_strength_base = (rsi - rsi_overbought) * 3  # 0-75 points
 
         if direction is None:
             return None
@@ -302,7 +446,11 @@ class RSIOversoldOverbought(BaseStrategy):
             suggested_entry, suggested_stop, direction, Decimal("1.5")
         )
 
-        reasoning = f"RSI({rsi:.1f}) {'deeply oversold' if direction == SignalDirection.LONG else 'deeply overbought'}"
+        reasoning = (
+            f"RSI({rsi:.1f}) {'deeply oversold' if direction == SignalDirection.LONG else 'deeply overbought'} "
+            f"(threshold: {rsi_oversold if direction == SignalDirection.LONG else rsi_overbought:.0f}, "
+            f"vol: {thresholds['volatility_pct']:.1f}%)"
+        )
 
         return Signal(
             symbol=symbol,

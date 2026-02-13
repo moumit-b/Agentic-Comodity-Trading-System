@@ -1,7 +1,6 @@
 """Market data API endpoints."""
 
 import logging
-from typing import List
 
 import pandas as pd
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
@@ -20,7 +19,7 @@ router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
 
 
-@router.get("/bars/{symbol}", response_model=List[BarResponse])
+@router.get("/bars/{symbol}", response_model=list[BarResponse])
 @limiter.limit("60/minute")
 async def get_bars(
     request: Request,
@@ -45,7 +44,7 @@ async def get_bars(
             "1Week": "1W",
         }
         resample_rule = timeframe_map.get(timeframe, "1D")
-        
+
         # Determine how many 1m bars to fetch
         # If aggregating, we need more raw data
         fetch_limit = limit
@@ -63,7 +62,7 @@ async def get_bars(
             )
             result = await session.execute(stmt)
             bars = result.scalars().all()
-            
+
             if not bars:
                 return []
 
@@ -92,7 +91,7 @@ async def get_bars(
                     "close": float(bar.close),
                     "volume": int(bar.volume)
                 })
-            
+
             df = pd.DataFrame(data)
             df["timestamp"] = pd.to_datetime(df["timestamp"])
             df.set_index("timestamp", inplace=True)
@@ -106,13 +105,13 @@ async def get_bars(
                 "close": "last",
                 "volume": "sum"
             }
-            
+
             df_resampled = df.resample(resample_rule).agg(agg_dict).dropna()
-            
+
             # Slice to requested limit
             if len(df_resampled) > limit:
                 df_resampled = df_resampled.iloc[-limit:]
-            
+
             # Convert back to response model
             response_data = []
             for timestamp, row in df_resampled.iterrows():
@@ -124,7 +123,7 @@ async def get_bars(
                     close=row["close"],
                     volume=int(row["volume"])
                 ))
-            
+
             return response_data
 
     except Exception as e:
@@ -132,7 +131,7 @@ async def get_bars(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/indicators/{symbol}", response_model=List[IndicatorResponse])
+@router.get("/indicators/{symbol}", response_model=list[IndicatorResponse])
 @limiter.limit("60/minute")
 async def get_indicators(
     request: Request,
@@ -147,7 +146,7 @@ async def get_indicators(
             stmt = (
                 select(Indicator)
                 .where(
-                    Indicator.symbol == symbol, 
+                    Indicator.symbol == symbol,
                     Indicator.timeframe == timeframe
                 )
                 .order_by(Indicator.timestamp.desc())
@@ -155,7 +154,7 @@ async def get_indicators(
             )
             result = await session.execute(stmt)
             indicators = result.scalars().all()
-            
+
             response_data = []
             for ind in indicators:
                 response_data.append(IndicatorResponse(
@@ -171,7 +170,7 @@ async def get_indicators(
                     bb_middle=float(ind.bb_middle) if ind.bb_middle is not None else None,
                     bb_lower=float(ind.bb_lower) if ind.bb_lower is not None else None,
                 ))
-                
+
             return sorted(response_data, key=lambda x: x.timestamp)
 
     except Exception as e:
